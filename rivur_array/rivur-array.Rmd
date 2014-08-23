@@ -6,6 +6,7 @@ output: html_document
 ```{r setting, message = FALSE, echo=FALSE}
 # xiao
 # shi
+
 # output:
 #   knitrBootstrap::bootstrap_document:
 #     theme.chooser: T
