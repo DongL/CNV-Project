@@ -2,7 +2,6 @@
 title: "RIVUR"
 output: html_document
 ---
-
 ```{r setting, message = FALSE, echo=FALSE}
 # output:
 #   knitrBootstrap::bootstrap_document:
@@ -294,7 +293,6 @@ ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_13_LABEL), ], aes(y = DEFA1.A3.CN, 
         scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
 #         facet_grid(.~TXGROUP)
         theme_bw() +
-        science_theme -> p2
 
 ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = factor(dtDM6A))) +
         geom_boxplot() +
@@ -310,21 +308,24 @@ plot = list(p1, p2, p3)
 do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 
 ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_01_LABEL)) +
-        geom_point(position = "", fill = "black", col = "blue", size = 2.5) +
+        geom_point(position = "", col = "blue") +
+        stat_sum(aes(size = ..n..), col = "blue") +
         scale_y_continuous(breaks = 3:14) +
         scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
         theme_bw() +
         science_theme -> p1
 
 ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_13_LABEL)) +
-        geom_point(position = "",  size = 2.5) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
         scale_y_continuous(breaks = 3:14) +
         scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
         theme_bw() +
         science_theme -> p2
 
 ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = dtDM6A)) +
-        geom_point(position = "",  size = 2.5) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
         scale_y_continuous(breaks = 3:14) +
         scale_x_continuous(breaks = -1:3) +
         theme_bw() +
@@ -332,9 +333,6 @@ ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = dtD
 plot = list()
 plot = list(p1, p2, p3)
 do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
-
-
-
 
 
 ```
