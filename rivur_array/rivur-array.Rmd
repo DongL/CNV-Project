@@ -4,9 +4,6 @@ output: html_document
 ---
 
 ```{r setting, message = FALSE, echo=FALSE}
-# xiao
-# shi
-
 # output:
 #   knitrBootstrap::bootstrap_document:
 #     theme.chooser: T
@@ -233,7 +230,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 ### Chronic constipation
-```{r cor-DVQSCORE, fig.height = 4, fig.width = 10}
+```{r cor-CHR_CONST, fig.height = 4, fig.width = 10}
 rva1a3_array$dtCHR_CONST_LABEL = unlist(rva1a3_array$CHR_CONST1302) - rva1a3_array$CHR_CONST0102
 
 par(mfrow = c(1,3))
