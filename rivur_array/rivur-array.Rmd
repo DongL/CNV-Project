@@ -47,6 +47,7 @@ science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"
 rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 names(rva1a3_array) = toupper(names(rva1a3_array))
 
+
 # str(rva1a3)
 # dim(rva1a3)
 # names(rva1a3)
@@ -193,7 +194,7 @@ rva1a3_array$dtDVQSCORE = rva1a3_array$DVQSCORE1304 - rva1a3_array$DVQSCORE0104
 
 # lm(DVQSCORE1304 ~ DEFA1.A3.CN, data = rva1a3_array)%>%summary
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE0104)) +
+ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE0104)) + 
 #         geom_boxplot() +
         geom_point(position = "")+
         geom_smooth(method = "lm") +
@@ -237,7 +238,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 
 ### Chronic constipation
 ```{r cor-CHR_CONST, fig.height = 4, fig.width = 10}
-rva1a3_array$dtCHR_CONST_LABEL = unlist(rva1a3_array$CHR_CONST1302) - rva1a3_array$CHR_CONST0102
+rva1a3_array$dtCHR_CONST_LABEL = unclass(rva1a3_array$CHR_CONST1302) - unclass(rva1a3_array$CHR_CONST0102)
 
 par(mfrow = c(1,3))
 boxplot(DEFA1.A3.CN ~ CHR_CONST0102, data = rva1a3_array, 
@@ -246,8 +247,8 @@ boxplot(DEFA1.A3.CN ~ CHR_CONST0102, data = rva1a3_array,
 boxplot(DEFA1.A3.CN ~ CHR_CONST1302, data = rva1a3_array, 
         xlab = "CHR_CONST1302", ylab = "DEFA1.A3.CN",
         notch = T)
-boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
-        xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
+boxplot(DEFA1.A3.CN ~ dtCHR_CONST_LABEL, data = rva1a3_array, 
+        xlab = "dtCHR_CONST_LABEL", ylab = "DEFA1.A3.CN",
         col = rainbow(3), notch = T)
 ```
 
