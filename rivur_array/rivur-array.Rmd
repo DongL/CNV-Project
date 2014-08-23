@@ -197,6 +197,8 @@ ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3
 #         geom_boxplot() +
         geom_point(position = "")+
         geom_smooth(method = "lm") +
+        stat_sum(aes(size = ..n..)) +
+
 #         xlim = c(3, 14) +
 #         scale_x_discrete() +
 #         facet_grid(.~TXGROUP) +
@@ -207,6 +209,8 @@ ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3
 #         geom_boxplot() +
         geom_point(position = "", fill = "black", col = "blue")+
         geom_smooth(method = "lm") +
+        stat_sum(aes(size = ..n..), col = "blue") +
+
 #         xlim = c(3, 14) +
 #         scale_x_discrete() +
 #         facet_grid(.~TXGROUP) +
