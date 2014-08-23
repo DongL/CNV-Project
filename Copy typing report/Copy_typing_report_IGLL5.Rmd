@@ -1,0 +1,135 @@
+---
+
+---
+
+Copy number variation of IGLL5
+========================================================
+```{r read-chunk, message = FALSE, echo=FALSE}
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+read_chunk("/Users/DL/Documents/R project/Memphis - Copy Number Variation/copyTyping.r")
+# opts_chunk$set(dev=c("png"), 
+#                dev.args=list(type="cairo"),
+#                dpi =300, fig.height = 4, fig.width = 8)
+# opts_chunk$set(fig_path = "/Users/DL/Documents/R%20project/Memphis%20-%20Copy%20Number%20Variation/Copy%20typing%20report/figure/")
+# opts_chunk$set(dev=c("pdf"), 
+#               fig.height =6, fig.width = 7)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 4, fig.width = 6)
+# opts_chunk$set(dev="tiff", 
+#                dev.args=list(compression="lzw"),
+#                dpi=300)
+opts_chunk$set(fig.show="hold")
+```
+
+```{r table_setup, echo=FALSE}
+tn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('\n Table ', i, ': ', x, sep = '')
+    # The : before Table tells pandoc to wrap your caption in <caption></caption>
+  }
+})
+knit_hooks$set(tab.cap = function(before, options, envir) {
+  if(!before)
+    tn(options$tab.cap)
+})
+default_output_hook = knit_hooks$get("output")
+knit_hooks$set(output = function(x, options) {
+  if (is.null(options$tab.cap) == F)  
+    x
+  else
+    default_output_hook(x,options)
+})
+```
+
+```{r fig_setup, include=FALSE}
+fn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('Figure ', i, ': ', x, sep = '')
+  }
+})
+
+```
+
+
+```{r data_load, cache=FALSE, message = FALSE, echo=F, results='asis'}
+data <- read.table("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RT-PCR Data/Raw data/071114-Dong-L5-Standards.csv", skip = 1, sep = ",", header = T)
+```
+
+## 1) Data summary
+```{r Data processing, comment = F, cache=FALSE, message = F, echo= F, warning = F, results='asis', tab.cap ="Sample Summary"}
+
+```
+
+## 2) Standard curve
+
+```{r Standard curve - table, cache=FALSE, message = FALSE, echo=FALSE, results='asis', tab.cap ="Standard Curve"}
+
+```
+
+
+```{r Standard.curve.plot, cache=FALSE, message = FALSE, echo=FALSE, results='asis', fig.align='left', fig.cap = fn("Standard Curve with concatemeric vector")}
+
+```
+
+Figure 1: Standard Curve with concatemeric vector
+
+## 3) Copy typing
+```{r Copy.number.prediction.table, cache=FALSE, message = FALSE, echo=FALSE, results='asis', tab.cap ="Copy number prediction"}
+
+```
+
+```{r Copy.number.prediction.plot, cache=FALSE, message = FALSE, echo=FALSE, results='asis', fig.cap = fn("Copy typing of IGLL5")}
+
+```
+
+### Note:  
+-  The following sample(s) might have vague estimation(s) of copy numbers: ***`r filter(sample.su, diff > 0.40)$Sample.Name`***.    
+-  The following sample(s) might have high SEM(s) : ***`r filter(sample.su, dCt.sem > 0.1)$Sample.Name`*** (***`r filter(sample.su, dCt.sem > 0.1)$dCt.sem`***).
+
+## 4) Supplementary analysis     
+### - Distribution of copy numbers 
+```{r hist, cache=FALSE, message = FALSE, echo=FALSE, results='asis', fig.cap = fn("Copy number distribution"), warning=F}
+ggplot(data = sample.su, aes(x = factor(Copy.Nbs)))+
+        geom_histogram(binwidth=0.3)
+
+# hist(sample.su$RelQ.mean)
+
+```
+
+
+### - Standard curve 2
+```{r Standard backup, cache=FALSE, message = FALSE, echo=FALSE, results='asis'}
+data.su = data.frame(Sample.Name = rep(c("1-1", "1-1","1-2", "1-2","1-3","1-3")),
+                     Target.Name = rep(c("ZNF80", "IGLL5"),times = 3),
+                     RQ = c(2^-19.91, 2^-21.13, 2^-15.37, 2^-16.27, 2^-19.77, 2^-20.49))
+```
+
+
+```{r standard, eval = F, cache=FALSE, message = F, echo=FALSE, results='asis', fig.cap =fn("Standard curve 2")}
+data <- read.table("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/Data/Raw data/071114-Dong-L5-Standards(Fit).csv", skip = 1, sep = ",", header = T)
+
+s <- tbl_df(data)
+
+std <- filter(s, Sample.Name %in% c("1-1", "1-2", "1-3", "2-1", "2-2", "2-3"))
+std.su <- group_by(std, Pos, Sample.Name) %.% 
+                summarize(dCt = Cp[1]-Cp[2], RelQ = 2^-dCt) %.%
+                group_by(Sample.Name) %.%
+                summarize(dCt.mean = mean(dCt), dCt.sem = sd(dCt)/sqrt(length(dCt)),
+                          RelQ.mean = mean(RelQ), RelQ.sem = sd(RelQ)/sqrt(length(RelQ)))
+ggplot(data = std.su, aes(x = Sample.Name, y = RelQ.mean)) +
+        geom_point()+
+        ylim(0,0.8)
+
+```
+
+
+
+

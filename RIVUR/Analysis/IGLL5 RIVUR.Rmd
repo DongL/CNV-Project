@@ -1,0 +1,98 @@
+Copy of IGLL5 (RIVUR)
+========================================================
+
+```{r table_setup, echo=FALSE}
+tn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('\n Table ', i, ': ', x, sep = '')
+    # The : before Table tells pandoc to wrap your caption in <caption></caption>
+  }
+})
+knit_hooks$set(tab.cap = function(before, options, envir) {
+  if(!before)
+    tn(options$tab.cap)
+})
+default_output_hook = knit_hooks$get("output")
+knit_hooks$set(output = function(x, options) {
+  if (is.null(options$tab.cap) == F)  
+    x
+  else
+    default_output_hook(x,options)
+})
+```
+
+```{r fig_setup, include=FALSE}
+fn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('Figure ', i, ': ', x, sep = '')
+  }
+})
+
+```
+
+```{r read-chunk, message = FALSE, echo=FALSE}
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+read_chunk("/Users/DL/Documents/R project/Memphis - Copy Number Variation/copyTyping.r")
+# opts_chunk$set(dev=c("png"), 
+#                dev.args=list(type="cairo"),
+#                dpi =300, fig.height = 4, fig.width = 8)
+# opts_chunk$set(fig_path = "/Users/DL/Documents/R%20project/Memphis%20-%20Copy%20Number%20Variation/Copy%20typing%20report/figure/")
+# opts_chunk$set(dev=c("pdf"), 
+#               fig.height =6, fig.width = 7)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 4, fig.width = 6)
+# opts_chunk$set(dev="tiff", 
+#                dev.args=list(compression="lzw"),
+#                dpi=300)
+opts_chunk$set(fig.show="hold")
+```
+
+
+## Data load
+```{r data load, echo=FALSE}
+rivur.l5 <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR/RAW/Copy of IGLL5 RIVUR_knum(1).csv", header = T)
+
+```
+
+```{r analysis, echo=FALSE}
+sample.num = dim(rivur.l5)[1]
+```
+Sample number:`r sample.num`
+
+```{r copy.number.distribution, echo=F, message=F}
+ggplot(data = rivur.l5, aes(x = copy.number ))+
+        geom_histogram()+
+#         geom_density()+
+        theme(legend.position = "bottom")
+
+```
+
+Correlation between copy number and dCt
+```{r correlation1, echo=F, warning=F, message=F}
+ggplot(data = rivur.l5, aes(x = copy.number, y = 2^-dCt1))+
+        geom_point(aes(fill = Plate.ID, col = Plate.ID))+
+        geom_smooth(methods = "lm")+
+        theme(legend.position = "bottom")
+```
+
+```{r correlation2, echo=F, warning=F, message=F}
+ggplot(data = rivur.l5, aes(x = 2^-dCt2, y = 2^-dCt3))+
+        geom_point(aes(fill = Plate.ID, col = Plate.ID))+
+        geom_smooth(methods = "lm")+
+        theme(legend.position = "bottom")
+```
+
+```{r correlation3, echo=F, warning=F, message=F}
+ggplot(data = rivur.l5, aes(x = 2^-dCt1, y = 2^-dCt2))+
+        geom_point(aes(fill = Plate.ID, col = Plate.ID))+
+        geom_smooth(methods = "lm")+
+        theme(legend.position = "bottom")
+```

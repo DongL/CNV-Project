@@ -1,0 +1,73 @@
+---
+title: "aCGH"
+output: html_document
+---
+```{r settings, echo = F, message = F, warnings = F}
+
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(knitr)
+library(biomaRt)
+library(NCBI2R)
+library(magrittr)
+library(RCurl)
+library(XML)
+
+opts_chunk$set(dev=c("svg"))
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(echo = F, message = F, warnings = F, 
+               results = 'asis')
+
+```
+
+
+```{r Creating aCGH object}
+library(aCGH)
+datadir <- system.file(package = 'aCGH')
+datadir <- paste(datadir, "/examples", sep = "")
+clones.info <- read.table(file = file.path(datadir, "clones.info.ex.txt"), 
+                          header = T, sep = "\t",
+                          quote = "", 
+                          comment.char = "")
+
+log2.ratios <- read.table(file = file.path(datadir, "log2.ratios.ex.txt"), header = T, sep = "\t",
+                          quote = "",
+                          comment.char = "")
+
+pheno.type <- read.table(file = file.path(datadir, "pheno.type.ex.txt"),
+                         header = T,
+                         sep = "\t",
+                         quote = "",
+                         comment.char = "" )
+
+ex.acgh <- create.aCGH(log2.ratios, clones.info, pheno.type)
+```
+
+```{r Filtering and imputation}
+ex.acgh <- aCGH.process(aCGH.obj = ex.acgh, chrom.remove.threshold =23,
+                        prop.missing = .25, 
+                        sample.quality.threshold = .4,
+                        unmapScreen = TRUE,
+                        dupRemove = F)
+
+# impute
+log2.ratios.imputed(ex.acgh) <- impute.lowess(ex.acgh, maxChrom = 24)
+
+```
+
+```{r printing summary and basic plotting}
+data(colorectal)
+colorectal
+quartz()
+plot(colorectal)
+
+sample.names(colorectal)
+
+colorectal$phenotype[1:4,]
+```
+
+```{r reading sproc files}
+
+```
+

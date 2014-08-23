@@ -1,0 +1,174 @@
+---
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+  word_document: default
+---
+IGLL5: Plate(8000013509)
+====
+
+```{r setting, message = FALSE, echo=FALSE}
+# output:
+#   knitrBootstrap::bootstrap_document:
+#     theme.chooser: T
+#     highlight.chooser: FALSE
+#     menu: F
+#     title: "IGLL5 report"
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 5, fig.width = 7)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
+opts_chunk$set(bootstrap.thumbnail.size='col-md-7', 
+               bootstrap.thumbnail = T,
+               bootstrap.panel = T)
+
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "none", 
+#                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))   
+```
+
+```{r data_load, cache=FALSE, message = FALSE, echo=F, results='asis'}
+data <- read.table("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/081914-Dong-8000013512-IGLL5-ZNF80.csv", skip = 1, sep = ",", header = T)
+
+map <- read.table("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Map/RIVUR_DILUTION_PLATES.csv",sep = ",", header = T)
+```
+
+```{r key map}
+p384 <- sapply(LETTERS[1:16], function(x) paste0(x, 1:24))%>%t
+p96 <- sapply(LETTERS[1:8], function(x) paste0(x, 1:12)) %>%t
+
+v96 = vector("character")
+v96_l <- lapply(seq_along(p96[,1]), function(i) {
+                a <- paste(paste(p96[i,],p96[i,]), p96[i,]) 
+                b <- strsplit(a, split = " ") %>% unlist
+                b[37:48] = NA
+                v96 = c(v96, b)
+        }) 
+
+keyMap <- data.frame(p96 = unlist(v96_l), p384 = as.vector(t(p384)) ) 
+keyMap_str <- data.frame(pos = c("B13", "B14", "B15",
+                                 "D13", "D14", "D15",
+                                 "F13", "F14", "F15",
+                                 "H13", "H14", "H15",
+                                 "J13", "J14", "J15",
+                                 "L13", "L14", "L15"),
+                         sample = c("K106957-", "K106957-", "K106957-",
+                                    "K44781-", "K44781-", "K44781-",
+                                    "K96097-", "K96097-", "K96097-",
+                                    "K94705-", "K94705-", "K94705-",
+                                    "K84083-", "K84083-", "K84083-",
+                                    "K75881-", "K75881-", "K75881-"))
+
+```
+
+```{r dilution plate 96}
+map = tbl_df(map)
+map$POSITION = strsplit(as.character(map$POSITION), split = " ")%>%unlist
+plate_code = "8000013512"
+map_13509 = filter(map, Plate_Box_Inv_Code %in% plate_code)
+
+```
+
+
+
+```{r test plate 384}
+data = tbl_df(data)
+
+# cali.su$dCt.mean = 0
+# group_by(data[data$Pos %in% c("D13", "D14", "D15")])
+
+data_su = group_by(data, Pos, Sample.Name) %>%
+        summarize(ddCt = Cp[1]-Cp[2], RelQ = 2^-ddCt)
+#         group_by(Sample.Name) %>%
+
+# data_su[data_su$Pos = ]
+
+```
+## Data summary
+```{r data merge}
+data_384 <- merge(keyMap, data_su, by.x = "p384", by.y = "Pos", all.x = T)
+
+data_merge <- merge(data_384, map_13509, by.x = "p96", by.y = "POSITION", all.x = T, sort = T ) %>% tbl_df
+
+data_m_su <- group_by(data_merge, RUID) %>% 
+        summarize(ddCt.mean = mean(ddCt), 
+                  ddCt.sem = sd(ddCt)/sqrt(length(ddCt)), 
+                  RelQ.mean = mean(RelQ), 
+                  RelQ.sem = sd(RelQ)/sqrt(length(RelQ)),
+                  conc = mean(Concentration_ng._L))  %>%
+        filter(RUID != "NA") %>%
+        select(-conc)
+
+
+str_merge <- merge(keyMap_str, data_su, by.x = "pos", by.y = "Pos", all.x = T)
+
+str_m_su <- group_by(str_merge, sample) %>% 
+        summarize(ddCt.mean = mean(ddCt), 
+                  ddCt.sem = sd(ddCt)/sqrt(length(ddCt)), 
+                  RelQ.mean = mean(RelQ), 
+                  RelQ.sem = sd(RelQ)/sqrt(length(RelQ)))
+        
+
+# linear regression
+str_m_su$copy.Nbs = c(NA, 1, NA, 2, NA, NA)
+str.fit <- lm(copy.Nbs ~ RelQ.mean, data = str_m_su)
+
+data_m_su$Copy.Nbs.esti = predict(str.fit, newdata = data.frame(RelQ.mean = data_m_su$RelQ.mean))
+data_m_su$Copy.Nbs.round = round(data_m_su$Copy.Nbs.esti)
+diff <- abs(data_m_su$Copy.Nbs.esti-data_m_su$Copy.Nbs.round)
+
+kable(data_m_su, digits = 2, align = "c" )
+
+file <- paste(c("IGLL5-", plate_code, ".csv"), collapse = "")
+write.csv(file = file, data_m_su)
+# ggplot(str_merge, aes(x = sample, y = RelQ.sem)) %>%
+#         geom_point()
+
+```
+
+## Standard curve
+```{r standard-curve}
+plot(str_m_su$RelQ.mean )
+ggplot(str_m_su, aes(x = RelQ.mean, y = copy.Nbs)) +
+        geom_point() +
+        geom_smooth(method = "lm") + 
+        theme_bw()+
+        science_theme
+
+# qplot(y = data_m_su$conc, x = data_m_su$Copy.Nbs.round)
+
+
+```
+
+## Distribution of copy numbers
+```{r distribution}
+# plot(table(data_m_su$Copy.Nbs.round))
+# table(data_m_su$Copy.Nbs.round)
+ggplot(data = data_m_su, aes(x = as.factor(Copy.Nbs.round))) +
+        theme_bw() +
+        geom_bar(binwidth = 0.9, col = "black", fill = "skyblue")+
+        science_theme
+
+# ggplot(data = data_m_su, aes(x = Copy.Nbs.esti)) +
+#         theme_bw() +
+#         geom_bar(binwidth = 0.05, col = "white", fill = "skyblue")
+```
+
+
+#### _Note_:  
+-  The following sample(s) might have vague estimation(s) of copy number: ***`r filter(data_m_su, diff > 0.40)$RUID`***.    
+-  The following sample(s) might have high SEM(s) : ***`r filter(data_m_su, ddCt.sem > 0.1)$RUID`*** (***`r filter(data_m_su, ddCt.sem > 0.1)$ddCt.sem`***).
+
+
+

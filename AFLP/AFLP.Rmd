@@ -1,0 +1,278 @@
+---
+title: "PRT report"
+output:
+  html_document:
+    theme: cerulean
+    toc: yes
+  pdf_document:
+    highlight: haddock
+    toc: yes
+---
+
+```{r setting, message = FALSE, echo=FALSE}
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(seqinr)
+library(magrittr)
+library(gridExtra)
+library(quantmod)
+read_chunk("/Users/DL/Documents/R project/Memphis - Copy Number Variation/copyTyping.r")
+# opts_chunk$set(dev=c("png"), 
+#                dev.args=list(type="cairo"),
+#                dpi =300, fig.height = 4, fig.width = 8)
+# opts_chunk$set(fig_path = "/Users/DL/Documents/R%20project/Memphis%20-%20Copy%20Number%20Variation/Copy%20typing%20report/figure/")
+# opts_chunk$set(dev=c("pdf"), 
+#               fig.height =6, fig.width = 7)
+opts_chunk$set(dev=c("svg"))
+# opts_chunk$set(dev="tiff", 
+#                dev.args=list(compression="lzw"),
+#                dpi=300)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(echo = F, warning = F)
+
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "none", 
+#                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))   
+```
+
+```{r my functions, include = F}
+peakloc <- function(peak, bg_sig = 0){
+        pre = peak - lag(peak)
+        post = peak - lead(peak)
+        index = which(pre>=0 & post>=0)
+#         index[is.na(index)] = 0
+        identical_point <- index - lead(index)
+        identical_point[is.na(identical_point)] = 0
+        index = index[identical_point != -1] 
+        index = index[peak[index] > bg_sig]
+        return(list(index = index, peak = peak))
+
+# ------ e.g. ------
+# peakloc(p)
+# peakloc(p, 0)
+# peakloc(p, 500)
+# ------ e.g. ------
+
+}
+size_predictor = function(time_inq = 0, fsadf, tags, time_start = 2000) {
+        std <- fsadf %>%
+#                 filter(peak > peak_thred) %>%
+                filter(chan == "standard" & tag == tags & time > time_start) 
+
+        index <- peakloc(std$peak, bg_sig =120)[["index"]] 
+        std_time <- std[index, ]$time
+        # find 3 signature peaks
+        diff_time <- lead(std_time) - std_time
+        print(diff_time)
+        if(length(which(diff_time == 118)) == 1)
+                m139bp_ind = which(diff_time == 118)
+        else(print(paste("Standard-139bp not identified in", tags)))
+        
+        std_index <- c(m139bp_ind-4, m139bp_ind-3, m139bp_ind-2, m139bp_ind-1,
+                       m139bp_ind, m139bp_ind+1, m139bp_ind+2, m139bp_ind+3,
+                       m139bp_ind+4, m139bp_ind+5, m139bp_ind+6, m139bp_ind+7,
+                       m139bp_ind+8, m139bp_ind+9, m139bp_ind+10, m139bp_ind+11)
+        
+        time <- std_time[std_index]
+        size <- c(35, 50, 75, 100, 139, 150, 160, 200, 250, 300, 340, 350, 400, 450,490, 500)
+        std_curve <- data.frame()
+        std_curve <- data.frame(time = std_time[std_index], size = size)
+        lm <- lm(size ~ time, data = std_curve)
+        size <- predict(lm, data.frame(time = c(time_inq)))
+        return(list(size, std_curve))
+}
+```
+
+
+```{r load files}
+seq_list <- list()
+fileloc = "/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/AFLP/7_21_14_PRT Sequencing/"
+fi <- list.files(fileloc)
+for (file in fi){
+        seq_list[[length(seq_list)+1]] <- read.abif(paste0(fileloc,file))
+} 
+
+for(i in 1:length(fi)){
+        attr(seq_list[[i]], "filename") = fi[i]
+}
+```
+
+
+```{r getting peak data}
+sig.channel = 1
+lad.channel = 4
+thresh = -100
+fsadf_list <- lapply(seq_list, function(x){
+        fsa <- x
+        # lad
+        lad.dat <- fsa$Data[[paste('DATA.', lad.channel, sep='')]]
+        res1 <- data.frame(tag = as.character(rep(attr(x, "filename"), length(lad.dat))),
+                       chan = as.character(rep("standard", length(lad.dat))),
+                       time = as.numeric(1:length(lad.dat)),
+                       peak = as.numeric(lad.dat))
+        # channel 1 for FAM
+        chan.dat <- fsa$Data[[paste('DATA.', sig.channel, sep='')]]
+        res1 <- rbind(res1, data.frame(tag = as.character(rep(attr(x, "filename"), length(chan.dat))),
+                                             chan = as.character(rep("FAM", length(chan.dat))),
+                                             time = as.numeric(1:length(chan.dat)),
+                                             peak = as.numeric(chan.dat)))
+        return(res1)
+        
+}) 
+
+fsadf <- do.call(rbind, fsadf_list)
+```
+
+
+```{r standard curves, eval = F}
+plot = list()
+for (i in seq_along(levels(fsadf$tag))){
+        data <- size_predictor(fsadf = fsadf, tags = levels(fsadf$tag)[i])[[2]]
+        pl <- ggplot(data, aes(x = time, y = size)) + 
+                geom_point()+
+                xlim(c(0,8000)) +
+                ylim(c(0,600))+
+                labs(title = levels(fsadf$tag)[i]) +
+                geom_smooth(method = "lm")
+        plot[[length(plot) + 1]] <- pl
+}
+do.call(grid.arrange, c(plot, list(nrow = 5, ncol =2)))
+```
+
+## Peak ratio
+```{r peak ratio, results = 'asis'}
+# p = list()
+# for (i in seq_along(levels(fsadf$tag))){
+#         peak_df <- filter(fsadf, tag == levels(fsadf$tag)[i] & chan == "FAM" & time > 4250 & time < 4400)$peak 
+#         peak_ind <- peakloc(peak_df, bg_sig = 50)$index
+#         peaks <- peak_df[peak_ind]
+#         peak_ratio <- peaks[1]/peaks[2]
+#         p[[length(p) + 1]] = data.frame(File = levels(fsadf$tag)[i], Peak1 = peaks[1], Peak2 = peaks[2], Peak_ratio = peak_ratio)
+# }
+# 
+# peak_df <- do.call(rbind, p)
+# kable(peak_df)
+
+
+p <- lapply(seq_along(levels(fsadf$tag)), function(i) {
+        peak_df <- filter(fsadf, tag == levels(fsadf$tag)[i] & chan == "FAM" & time > 4250 & time < 4400)$peak 
+        peak_ind <- peakloc(peak_df, bg_sig = 80)$index
+        peaks <- peak_df[peak_ind]
+        peak_ratio <- peaks[1]/peaks[2]
+        p <- data.frame(File = levels(fsadf$tag)[i], 
+                        Peak1 = peaks[1], 
+                        Peak2 = peaks[2], 
+                        Peak_ratio = peak_ratio)
+        return(p)
+})
+
+peak_df <- do.call(rbind, p)
+kable(peak_df, align = "c", digits = 1)
+```
+
+```{r plot - base plot, fig.height = 8, fig.width = 7, message = F, comment = F, eval = F}
+# quartz()
+par(mar = c(2, 2, 2, 2))
+par(mfrow= c(1,1))
+
+invisible(
+        sapply(levels(fsadf$tag), function(x) {
+                tag <- x
+                plot(peak ~ time, data = fsadf[fsadf$chan == "standard" & fsadf$tag == tag, ], 
+               col = "red", type = 'l', xlim = c(2000, 8600), ylim = c(0, 1000))
+        points(peak ~ time, data = fsadf[fsadf$chan == "FAM" & fsadf$tag == tag, ], 
+                   col = "blue", type = 'l')
+        title(tag)
+        })        
+)
+
+```
+## Plot 1
+```{r plot - ggplot, fig.height = 20, fig.width = 15, message = F, comment = F, eval = T}
+
+
+# plot = list()
+# for (i in 1:length(levels(fsadf$tag))){
+#         tag = levels(fsadf$tag)[i]
+#         data_std <- fsadf[fsadf$chan == "standard" & fsadf$tag == tag, ]
+#         data_sig <- fsadf[fsadf$chan == "FAM" & fsadf$tag == tag, ]
+#         pl <- ggplot(data = data_std, aes(y = peak, x = time, col = "red")) +  
+#                 theme_bw() +
+#                 science_theme +
+#                 geom_line(size = 0.4)+
+#                 xlim(c(1500, 5000))+
+#                 ylim(c(-20, 10000))+     
+#                 geom_line(data = data_sig, col = "blue", size = 0.4)+
+#                 labs(title = tag)
+#         plot[[length(plot) + 1]] <- pl
+#                            
+#         
+#         } 
+
+plot <- lapply(seq_along(levels(fsadf$tag)), function(i) {
+        tag = levels(fsadf$tag)[i]
+        data_std <- fsadf[fsadf$chan == "standard" & fsadf$tag == tag, ]
+        data_sig <- fsadf[fsadf$chan == "FAM" & fsadf$tag == tag, ]
+        pl <- ggplot(data = data_std, aes(y = peak, x = time, col = "red")) +  
+                theme_bw() +
+                science_theme +
+                geom_line(size = 0.4)+
+                xlim(c(1500, 5000))+
+                ylim(c(-20, 5000))+     
+                geom_line(data = data_sig, col = "blue", size = 0.4)+
+                labs(title = tag)
+                return(pl)
+})
+
+do.call(grid.arrange, c(plot, list(nrow = 10, ncol =2)))
+```
+
+## Plot 2
+```{r plots-zoom-in bis, fig.height = 8, fig.width = 7, message = F, comment = F, eval = F}
+plot = list()
+for (i in 1:length(levels(fsadf$tag))){
+        tag = levels(fsadf$tag)[i]
+        data_std <- fsadf[fsadf$chan == "standard" & fsadf$tag == tag, ]
+        data_sig <- fsadf[fsadf$chan == "FAM" & fsadf$tag == tag, ]
+        pl <- ggplot(data = data_std, aes(y = peak, x = time, col = "red")) +  
+                theme_bw() +
+                science_theme +
+                geom_line(size = 0.4)+
+                xlim(c(4250, 4450))+
+                ylim(c(-20, max(data_sig$peak[data_sig$time > 4250 & data_sig$time < 4450])+100))+     
+                geom_line(data = data_sig, col = "blue", fill = "skyblue", size = 0.4)+
+                labs(title = tag)
+        plot[[length(plot) + 1]] <- pl
+                           
+        
+        } 
+do.call(grid.arrange, c(plot, list(nrow = 10, ncol =2)))
+```
+
+
+```{r plots-zoom-in, fig.height = 20, fig.width = 15, message = F, comment = F}
+
+plot <- lapply(seq_along(levels(fsadf$tag)), function(i) {
+                tag = levels(fsadf$tag)[i]
+                data_std <- fsadf[fsadf$chan == "standard" & fsadf$tag == tag, ]
+                data_sig <- fsadf[fsadf$chan == "FAM" & fsadf$tag == tag, ]
+                pl <- ggplot(data = data_std, aes(y = peak, x = time, col = "red")) +  
+                        theme_bw() +
+                        science_theme +
+                        xlim(c(4000, 4500))+
+                        ylim(c(-100, max(data_sig$peak[data_sig$time > 4000 & data_sig$time < 4500])*1.07))+   
+                        geom_line(size = 0.4)+
+                        geom_line(data = data_sig, col = "blue", fill = "skyblue", size = 0.4)+
+
+                        labs(title = tag)
+                return(pl)
+}) 
+       
+do.call(grid.arrange, c(plot, list(nrow = 10, ncol =2)))
+```
