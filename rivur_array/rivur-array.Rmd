@@ -58,7 +58,7 @@ names(rva1a3_array) = toupper(names(rva1a3_array))
 # 
 # CrossTable(x = rva1a3_array$AGE0101, y = rva1a3_array$RACE0102)
 
-pairs.panels(rva1a3_array[c("AGE0101","RACE0102","SEX0101", "DEFA1.A3.CN")])
+# pairs.panels(rva1a3_array[c("AGE0101","RACE0102","SEX0101", "DEFA1.A3.CN")])
 
 ```
 
@@ -242,13 +242,102 @@ boxplot(DEFA1.A3.CN ~ CHR_CONST1302, data = rva1a3_array,
         notch = T)
 boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
         xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
-        col = rainbow(3))
-
+        col = rainbow(3), notch = T)
 ```
 
+### DMSA scan results
+```{r cor-DMSA, fig.height = 4, fig.width = 14}
+rva1a3_array$dtDM6A = unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)
+
+rva1a3_array$DM6A_01_LABEL = recode(rva1a3_array$DM6A_01, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rva1a3_array$DM6A_01_LABEL = factor(rva1a3_array$DM6A_01_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+rva1a3_array$DM6A_13_LABEL = recode(rva1a3_array$DM6A_13, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rva1a3_array$DM6A_13_LABEL = factor(rva1a3_array$DM6A_13_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+# par(mfrow = c(1,3))
+# boxplot(DEFA1.A3.CN ~ DM6A_01_LABEL, data = rva1a3_array,
+#         xlab = "DM6A_01", ylab = "DEFA1.A3.CN", 
+#         notch = T, col = rainbow(5))
+# boxplot(DEFA1.A3.CN ~ DM6A_13_LABEL, data = rva1a3_array, 
+#         xlab = "DM6A_13", ylab = "DEFA1.A3.CN", 
+#         notch = T, col = rainbow(5))
+# boxplot(DEFA1.A3.CN ~ dtDM6A, data = rva1a3_array, 
+#         xlab = "dtDM6A", ylab = "DEFA1.A3.CN", 
+#         notch = T, col = rainbow(5))
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_01_LABEL)) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot(aes(fill = DM6A_01_LABEL)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_13_LABEL)) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = factor(dtDM6A))) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(breaks = -1:4) +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_01_LABEL)) +
+        geom_point(position = "", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_13_LABEL)) +
+        geom_point(position = "",  size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = dtDM6A)) +
+        geom_point(position = "",  size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_continuous(breaks = -1:3) +
+        theme_bw() +
+        science_theme -> p3
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 
 
 
+
+
+```
 
 
 
