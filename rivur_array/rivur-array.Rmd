@@ -4,8 +4,8 @@ output: html_document
 ---
 
 ```{r setting, message = FALSE, echo=FALSE}
-# test
-
+# xiao
+# shi
 # output:
 #   knitrBootstrap::bootstrap_document:
 #     theme.chooser: T
