@@ -1,0 +1,172 @@
+title: Sanger Sequencing
+---
+```{r eval=FALSE, include=F}
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+
+author: "Dong Liang"
+output:
+  html_document:
+    fig_caption: yes
+    keep_md: yes
+    toc: yes
+  pdf_document:
+    toc: yes
+  word_document: default
+```
+
+
+```{r table_setup, eval = FALSE, echo=FALSE}
+tn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('\n Table ', i, ': ', x, sep = '')
+    # The : before Table tells pandoc to wrap your caption in <caption></caption>
+  }
+})
+knit_hooks$set(tab.cap = function(before, options, envir) {
+  if(!before)
+    tn(options$tab.cap)
+})
+default_output_hook = knit_hooks$get("output")
+knit_hooks$set(output = function(x, options) {
+  if (is.null(options$tab.cap) == F)  
+    x
+  else
+    default_output_hook(x,options)
+})
+```
+
+```{r fig_setup,eval = FALSE, include=FALSE}
+fn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('Figure ', i, ': ', x, sep = '')
+  }
+})
+
+```
+
+```{r setting, warning = F, message = FALSE, echo=FALSE}
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(sangerseqR)
+library(snplist)
+library("biomaRt")
+# library(seqinr)
+read_chunk("")
+# opts_chunk$set(dev=c("png"), 
+#                dev.args=list(type="cairo"),
+#                dpi =300, fig.height = 4, fig.width = 8)
+# opts_chunk$set(fig_path = "/Users/DL/Documents/R%20project/Memphis%20-%20Copy%20Number%20Variation/Copy%20typing%20report/figure/")
+# opts_chunk$set(dev=c("pdf"), 
+#               fig.height =6, fig.width = 7)
+# opts_chunk$set(dev=c("png"), 
+#               fig.height = 4, fig.width = 6)
+opts_chunk$set(dev=c("svg"))
+# opts_chunk$set(dev="tiff", 
+#                dev.args=list(compression="lzw"),
+#                dpi=300)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(echo = F)
+
+```
+
+```{r load seq, warning = FALSE,message = FALSE, echo=FALSE}
+ab1 <- read.abif("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/Sequencing/trace-Jun12-15-9-20/kp1-1-1-F_M13F_A10_Jun-11-2014.ab1")
+# names(ab1@data)
+# ab1 <- read.abif(system.file("extdata", "heterozygous.ab1", package = "sangerseqR"))
+# str(ab1, list.len = 20)
+```
+
+
+```{r processing, warning = FALSE, message = FALSE, echo = FALSE}
+# ab1
+seqdf <- data.frame(G = ab1@data$DATA.9, 
+                    A = ab1@data$DATA.10,
+                    T = ab1@data$DATA.11,
+                    C = ab1@data$DATA.12)
+seqdf$first.peak = apply(seqdf, 1, max)
+
+seqdf$second.peak = apply(seqdf, 1, function(x) max(x[x!=max(x)]))
+seqdf$"ratio(f/s)" = round(seqdf$first.peak/seqdf$second.peak,1)
+
+inPLOC.1 <- row.names(seqdf) %in% ab1@data$PLOC.1
+seqdf$PLOC.1 = ifelse(inPLOC.1, "Peak", NA)
+inPLOC.2 <- row.names(seqdf) %in% ab1@data$PLOC.2
+seqdf$PLOC.2 = ifelse(inPLOC.2, "Peak", NA)
+
+seqdf.peak <- filter(seqdf, PLOC.1 == "Peak")%.%
+        select(c(1:7)) 
+seqdf.peak$peak.num = row.names(seqdf.peak)
+
+# head(seqdf.peak, 100)
+```
+
+
+```{r SNP loc, results='asis', echo = F}
+call <- ab1@data$PBAS.1
+
+r <- regexpr("GCTCACTCAAAGG", call)
+SNP.index <- r[1]+ attr(r,"match.length")
+seqdf.peak$SNP[row.names(seqdf.peak) == SNP.index] = "rsxxx" 
+
+
+r1 <- regexpr("TGACATTAAAA", call)
+r2 <- regexpr("AAGGACCCCAA", call)
+r3 <- regexpr("GGGAGCAGACA", call)
+r4 <- regexpr("AAAAAACACAA", call)
+r5 <- regexpr("TACCCCTGAGC", call)
+r6 <- regexpr("TCATGTAAAAC", call)
+
+rs376101.ind  <- r1[1]+ attr(r,"match.length")
+rs4820535.ind <- r2[1]+ attr(r,"match.length")
+rs3171722.ind <- r3[1]+ attr(r,"match.length")
+rs9623964.ind <- r4[1]+ attr(r,"match.length")
+rs2066998.ind <- r5[1]+ attr(r,"match.length")
+rs2066997.ind <- r6[1]+ attr(r,"match.length")
+
+seqdf.peak$SNP[row.names(seqdf.peak) == rs376101.ind]  = "rs376101"
+seqdf.peak$SNP[row.names(seqdf.peak) == rs4820535.ind] = "rs4820535"
+seqdf.peak$SNP[row.names(seqdf.peak) == rs3171722.ind] = "rs3171722"
+seqdf.peak$SNP[row.names(seqdf.peak) == rs9623964.ind] = "rs9623964"
+seqdf.peak$SNP[row.names(seqdf.peak) == rs2066998.ind] = "rs2066998"
+seqdf.peak$SNP[row.names(seqdf.peak) == rs2066997.ind] = "rs2066997"
+seqdf.peak$SNP[is.na(seqdf.peak$SNP)] = ""
+```
+
+
+## Table: Data summary
+```{r ratio.1, results='asis', warning = FALSE, message = FALSE, echo = FALSE, }
+ratio.1 = seqdf.peak$"ratio(f/s)" %in% c("1.4","1.5","1.6", "0.4", "0.5", "0.6")
+seq.ratio.1 <- filter(seqdf.peak, ratio.1)
+kable(seq.ratio.1, digits = 1, align  = "c")
+```
+
+## Table: SNP calling
+```{r CNV-estimation, results = 'asis'}
+SNP.peak <- seqdf.peak[!seqdf.peak$SNP == "",]
+kable(SNP.peak, align = "c")                        
+```
+
+
+## Plot: Peak ratio distribution
+```{r plot, warning = FALSE, message = FALSE, echo = FALSE, fig.cap = "Distribution of peak ratio"}
+# hist(seqdf.peak$"ratio(f/s)" ,freq=T, breaks = 0.1)
+ggplot(data = seqdf.peak, aes(x = seqdf.peak$"ratio(f/s)"))+
+        theme_bw() +
+        geom_bar(binwidth = 0.1, col = "black", fill = "skyblue")+
+        xlim(1,5)+
+        labs(x = "Peak Ratio")
+        
+```
+```{r snp, eval= F}
+gene <- c("IGLL5")
+geneInfo <- getBioMartData(gene)
+geneInfo
+```
+

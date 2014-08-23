@@ -1,0 +1,356 @@
+---
+title: "RIVUR"
+output: html_document
+---
+
+```{r setting, message = FALSE, echo=FALSE}
+# test
+
+# output:
+#   knitrBootstrap::bootstrap_document:
+#     theme.chooser: T
+#     highlight.chooser: FALSE
+#     menu: F
+#     title: "IGLL5 report"
+library(xlsx)
+library(car)
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(magrittr)
+library(gridExtra)
+library(gmodels)
+library(psych)
+library(tabplot)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 6, fig.width = 8)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
+opts_chunk$set(bootstrap.thumbnail.size='col-md-7', 
+               bootstrap.thumbnail = T,
+               bootstrap.panel = T)
+
+# source("/Users/DL/Documents/R project/Memphis - Copy Number Variation/Functions/myFunction.R")
+
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "none", 
+#                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))   
+```
+
+```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
+
+# rva1a3 <- read.xlsx2("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3.xls", sheetIndex = 1, header = T, stringsAsFactors = F) %>% tbl_df
+
+rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
+names(rva1a3_array) = toupper(names(rva1a3_array))
+
+# str(rva1a3)
+# dim(rva1a3)
+# names(rva1a3)
+# names(rva1a3_array)
+# IQR(rva1a3_array$DEFA1.A3.CN, na.rm = T)
+# prop.table(table(rva1a3_array$DEFA1.A3.CN))
+# quantile(rva1a3_array$DEFA1.A3.CN, na.rm = T, probs = 0.01)
+# boxplot(rva1a3_array$DEFA1.A3.CN, notch = T, varwidth = T)
+# 
+# CrossTable(x = rva1a3_array$AGE0101, y = rva1a3_array$RACE0102)
+
+pairs.panels(rva1a3_array[c("AGE0101","RACE0102","SEX0101", "DEFA1.A3.CN")])
+
+```
+
+## Data summary
+```{r summary - table}
+# rva1a3_array %>% group_by(ETHNIC0101, SEX0101) %>%
+#         summarize(mean(DEFA1.A3.CN), n()) -> t1
+# 
+rva1a3_array %>% group_by(RACE0102) %>%
+        summarize(DEFA1A3.mean = mean(DEFA1.A3.CN), Nbs = n()) -> t2
+# 
+# rva1a3_array %>% group_by(RaceEth, SEX0101) %>%
+#         summarize(mean(DEFA1.A3.CN), n()) -> t3
+
+# kable(t1)
+# kable(t2)
+# kable(t3)
+
+```
+
+```{r summary - plot}
+par(mfrow = c(2,2))
+hist(rva1a3_array$AGE0101, xlab = "Age")
+hist(rva1a3_array$RACE0102, breaks = 20, xlab = "Race")
+plot(factor(rva1a3_array$SEX0101), xlab = "Sex")
+hist(rva1a3_array$DEFA1.A3.CN, xlab = "DEFA1A3.CN")
+```
+
+## Correlation
+### Race & Age 
+```{r cor, fig.height = 4, fig.width = 10}
+rva1a3_array$RACE0102_EXP = recode(rva1a3_array$RACE0102, 
+                             "1 = 'White'; 
+                              2 = 'Black';
+                              3 = 'Asian';
+                              4 = 'Hawaiian/Pacific Islander ';
+                              5 = 'American Indian/Alaskan';
+                              6 = 'Other';
+                              7 = 'Mixed';
+                              8 = 'Missing'
+                             ")
+par(mfrow = c(1,2))
+boxplot(DEFA1.A3.CN ~ RACE0102_EXP, data = rva1a3_array, 
+        xlab = "Race", ylab = "DEFA1.A3.CN",
+        col = rainbow(7),
+        notch = T)
+boxplot(DEFA1.A3.CN ~ SEX0101, data = rva1a3_array, 
+        xlab = "Sex", ylab = "DEFA1.A3.CN",
+        notch = T, varwidth = F)
+
+```
+
+> Among all the races recoded, Asian population tends to have highest copy number of DEFA1A3 with median copy number value of DEFA1A3 at 7.
+
+### Bladder and bowel movement dysfunction
+```{r cor2, fig.height = 4, fig.width = 10}
+rva1a3_array$dtBBD = rva1a3_array$BBD1302 - rva1a3_array$BBD0102
+rva1a3_array$dtBBD_EXP = recode(rva1a3_array$dtBBD, 
+                             "1 = 'Worse'; 
+                              0 = 'No Change';
+                             -1 = 'Better'")
+
+par(mfrow = c(1,3))
+boxplot(DEFA1.A3.CN ~ BBD0102, data = rva1a3_array, 
+        xlab = "BBD0102", ylab = "DEFA1.A3.CN")
+boxplot(DEFA1.A3.CN ~ BBD1302, data = rva1a3_array, 
+        xlab = "BBD1302", ylab = "DEFA1.A3.CN")
+boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
+        xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
+        col = rainbow(3))
+```
+
+
+> Higher copy number of DEFA1A3 appears to be associated with better dtBBD score (changing from socre 1 to 0, indicative of BBD getting better) two years after intial recruitment.
+
+```{r ddBBD by TXGROUP, eval = F}
+ggplot(rva1a3_array, aes(x = dtBBD_EXP, y = DEFA1.A3.CN, fill = dtBBD_EXP)) +
+        geom_boxplot() +
+        geom_point(position = "jitter")+
+        scale_y_discrete(limits = c(3:14)) +
+        facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme +
+        scale_fill_brewer(palette = "Set3")
+# 
+# rva1a3_array %>% 
+#         group_by(dtBBD_EXP) %>%
+#         summarise(mean(DEFA1.A3.CN, na.rm = T), n())
+
+```
+
+### TF02
+```{r cor-TF02, fig.height = 4, fig.width = 12}
+rva1a3_array$TF02_LABLE = recode(rva1a3_array$TF02, 
+                             "1 = 'Treatment Failure'; 
+                              0 = 'No Treatment Failure'
+                             ")
+
+# par(mfrow = c(1,1))
+# boxplot(DEFA1.A3.CN ~ TF02_LABLE, data = rva1a3_array, 
+#         xlab = "TF02", ylab = "DEFA1.A3.CN")
+
+ggplot(rva1a3_array, aes(x = TF02_LABLE, y = DEFA1.A3.CN, fill =TF02_LABLE)) +
+        geom_boxplot() +
+        geom_point(position = "jitter")+
+        scale_x_discrete() +
+        facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme 
+
+
+```
+
+```{r cor-TF02 table, eval = F}
+rva1a3_array %>% 
+        group_by(TF02_LABLE, TXGROUP) %>%
+        summarise(DEFA1A3.median = median(DEFA1.A3.CN, na.rm = T), Nbs = n()) %>% 
+        kable(align = "l")
+```
+
+### DVQ SCORE
+```{r cor-DVQSCORE, fig.height = 4, fig.width = 12}
+rva1a3_array$dtDVQSCORE = rva1a3_array$DVQSCORE1304 - rva1a3_array$DVQSCORE0104
+
+# par(mfrow = c(1,3))
+# plot(DVQSCORE0104 ~ DEFA1.A3.CN, data = rva1a3_array, 
+#         ylab = "DVQSCORE0104", xlab = "DEFA1.A3.CN")
+# plot(DVQSCORE1304 ~ DEFA1.A3.CN, data = rva1a3_array, 
+#         ylab = "DVQSCORE1304", xlab = "DEFA1.A3.CN")
+# plot(dtDVQSCORE ~ DEFA1.A3.CN, data = rva1a3_array, 
+#         ylab = "dtDVQSCORE", xlab = "DEFA1.A3.CN")
+
+# lm(DVQSCORE1304 ~ DEFA1.A3.CN, data = rva1a3_array)%>%summary
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE0104)) +
+#         geom_boxplot() +
+        geom_point(position = "")+
+        geom_smooth(method = "lm") +
+#         xlim = c(3, 14) +
+#         scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE1304)) +
+#         geom_boxplot() +
+        geom_point(position = "", fill = "black", col = "blue")+
+        geom_smooth(method = "lm") +
+#         xlim = c(3, 14) +
+#         scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = dtDVQSCORE)) +
+#         geom_boxplot() +
+        geom_point(position = "", fill = "black", col = "blue")+
+        geom_smooth(method = "lm") +
+#         xlim = c(3, 14) +
+#         scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
+```
+
+### Chronic constipation
+```{r cor-DVQSCORE, fig.height = 4, fig.width = 10}
+rva1a3_array$dtCHR_CONST_LABEL = unlist(rva1a3_array$CHR_CONST1302) - rva1a3_array$CHR_CONST0102
+
+par(mfrow = c(1,3))
+boxplot(DEFA1.A3.CN ~ CHR_CONST0102, data = rva1a3_array, 
+        xlab = "CHR_CONST0102", ylab = "DEFA1.A3.CN", 
+        notch = T, col = rainbow(2))
+boxplot(DEFA1.A3.CN ~ CHR_CONST1302, data = rva1a3_array, 
+        xlab = "CHR_CONST1302", ylab = "DEFA1.A3.CN",
+        notch = T)
+boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
+        xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
+        col = rainbow(3))
+
+```
+
+
+
+
+
+
+
+
+## Caucasian Female
+```{r C-F, eval=F}
+cf <- filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
+
+
+
+cf %>% group_by(PRIORUTI0101) %>%
+        summarize(mean(DEFA1.A3.CN), n())
+cf %>% group_by(NUM_UTI01) %>%
+        summarize(mean(DEFA1.A3.CN), n())
+cf$DEFA1.A3.CN = as.numeric(cf$DEFA1.A3.CN)
+
+par(mfrow = c(2,2))
+plot(cf$DEFA1.A3.CN ~ cf$PRIORUTI0101)
+plot(DEFA1.A3.CN ~ AGE0101, data = cf)
+plot(DEFA1.A3.CN ~ NUM_UTI01, data = cf)
+```
+
+```{r plot, eval=F}
+ggplot(cf, aes(x = NUM_UTI01, y = DEFA1.A3.CN)) + 
+        geom_boxplot() +
+        geom_point(position = "jitter")+
+        theme_bw() +
+        science_theme
+
+# lm(DEFA1.A3.CN ~ NUM_UTI01, data = cf) %>% summary
+
+ggplot(cf, aes(x = as.factor(DVQSCORE0104), y = as.numeric(DEFA1.A3.CN))) + 
+        geom_boxplot() +
+        geom_point(position = "jitter")+
+        theme_bw() +
+        science_theme
+        
+ggplot(cf, aes(x = as.factor(URINE_RES07), y = as.numeric(DEFA1.A3.CN))) + 
+        geom_boxplot() +
+        geom_point(position = "jitter")+
+        theme_bw() +
+        science_theme
+
+ggplot(cf, aes(x = as.factor(USRORG13A01), y = as.numeric(DEFA1.A3.CN))) + 
+        geom_boxplot(aes(fill = USRORG13A01)) +
+        geom_point(position = "jitter")+
+        theme_classic() +
+        science_theme
+
+        
+```
+
+
+```{r vesicoureteral reflux, eval=F}
+names(cf) = toupper(names(cf))
+cf %>% mutate(dtVR_3L = as.numeric(VR_3L_1301) - as.numeric(VR_3L_0101),
+              dtVR_3R = as.numeric(VR_3R_1301) - as.numeric(VR_3R_0101),
+              dtHIGHEST_REFLUX = as.numeric(HIGHEST_REFLUX1301) - as.numeric(HIGHEST_REFLUX0101),
+              dtHIGHEST_REFLUX_SIDE = ifelse(HIGHEST_REFLUX_SIDE0101==HIGHEST_REFLUX_SIDE1301, 'NO', "YES"),
+              dtDVQSCORE = as.numeric(DVQSCORE1304) - as.numeric(DVQSCORE0104)
+              ) %>%
+        select(dtVR_3L : dtDVQSCORE, DEFA1.A3.CN, TXGROUP, SEX0101)  ->cf_prog
+
+cf_prog %>% 
+        ggplot(., aes(x = dtVR_3L, y = DEFA1.A3.CN)) +
+        geom_point(position = "jitter") +
+        geom_smooth(method = "lm") +
+        facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme
+
+
+ggplot(data = cf_prog, aes(y = DEFA1.A3.CN, x = dtDVQSCORE)) +  
+        geom_point(position = "jitter") +
+        geom_smooth(method = "lm") +
+        facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme
+
+# pl = list()
+# plot <- lapply(seq_along(names(cf_prog)), function(i) {
+#         var = names(cf_prog)[i]
+#         
+#         pl <- ggplot(data = cf_prog, aes(y = DEFA1.A3.CN, x = var)) +  
+#                 geom_point(position = "jitter") +
+#                 geom_smooth(method = "lm") +
+#                 facet_grid(.~TXGROUP) +
+#                 theme_bw() +
+#                 science_theme
+#         
+#         pl
+# })
+# 
+# do.call(grid.arrange, c(plot, list(nrow = 4, ncol =2)))
+
+```
+
+```{r tblplot, eval=F}
+
+```
+
+
+

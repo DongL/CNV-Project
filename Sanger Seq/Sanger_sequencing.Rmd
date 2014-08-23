@@ -1,0 +1,471 @@
+---
+title: "Sanger Sequencing - IGLL5"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+  word_document: default
+---
+```{r eval=FALSE, include=F}
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+author: "Dong Liang"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+```
+
+
+```{r table_setup, eval = FALSE, echo=FALSE}
+tn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('\n Table ', i, ': ', x, sep = '')
+    # The : before Table tells pandoc to wrap your caption in <caption></caption>
+  }
+})
+knit_hooks$set(tab.cap = function(before, options, envir) {
+  if(!before)
+    tn(options$tab.cap)
+})
+default_output_hook = knit_hooks$get("output")
+knit_hooks$set(output = function(x, options) {
+  if (is.null(options$tab.cap) == F)  
+    x
+  else
+    default_output_hook(x,options)
+})
+```
+
+```{r fig_setup, eval = FALSE, include=FALSE}
+fn = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('Figure ', i, ': ', x, sep = '')
+  }
+})
+
+```
+
+```{r setting, warning = F, message = FALSE, echo=FALSE}
+library(knitr)
+# library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(sangerseqR)
+# library(snplist)
+library(biomaRt)
+library(NCBI2R)
+library(magrittr)
+library(RCurl)
+library(XML)
+library(rsnps)
+# library(seqinr)
+read_chunk("")
+# opts_chunk$set(dev=c("png"), 
+#                dev.args=list(type="cairo"),
+#                dpi =300, fig.height = 4, fig.width = 8)
+# opts_chunk$set(fig_path = "/Users/DL/Documents/R%20project/Memphis%20-%20Copy%20Number%20Variation/Copy%20typing%20report/figure/")
+# opts_chunk$set(dev=c("pdf"), 
+#               fig.height =6, fig.width = 7)
+# opts_chunk$set(dev=c("png"), 
+#               fig.height = 4, fig.width = 6)
+opts_chunk$set(dev=c("pdf"))
+opts_chunk$set(eval = T)
+# opts_chunk$set(dev="tiff", 
+#                dev.args=list(compression="lzw"),
+#                dpi=300)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(echo = F, message = F, warnings = F, 
+               results = 'asis')
+
+```
+
+```{r load seq, warning = FALSE,message = FALSE, echo=FALSE}
+seq_list <- list()
+fileloc = "/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/Sequencing/trace-Jul17-14-46-13/"
+fi <- list.files(fileloc)
+for (file in fi){
+        seq_list[length(seq_list)+1] <- read.abif(paste0(fileloc,file))
+} 
+
+for(i in 1:length(fi)){
+        attr(seq_list[[i]], "filename") = fi[i]
+}
+# seq_list = seq_list[c(1,3,5)]
+
+```
+
+
+```{r processing, warning = FALSE, message = FALSE, echo = FALSE}
+# ab1
+library(dplyr)
+seqdf.peak <- lapply(seq_list, function(x){
+        ab1 <- x
+        attr <- attr(ab1, "filename")
+        seqdf <- data.frame(G = ab1@data$DATA.9, 
+                            A = ab1@data$DATA.10,
+                            T = ab1@data$DATA.11,
+                            C = ab1@data$DATA.12)
+        seqdf$first.peak = apply(seqdf, 1, function(x) sort(x)[4])
+        seqdf$second.peak = apply(seqdf, 1, function(x) sort(x)[3])
+#         seqdf$third.peak = apply(seqdf, 1, function(x) sort(x)[2])
+#         seqdf$fourth.peak = apply(seqdf, 1, function(x) sort(x)[1])
+#         
+        seqdf$major = seqdf$"A"
+        seqdf$minor = seqdf$"G"
+        seqdf$"ratio(f/s)" = round(seqdf$first.peak/seqdf$second.peak,1)
+        
+        inPLOC.1 <- row.names(seqdf) %in% ab1@data$PLOC.1
+        seqdf$PLOC.1 = ifelse(inPLOC.1, "Peak", NA)
+        inPLOC.2 <- row.names(seqdf) %in% ab1@data$PLOC.2
+        seqdf$PLOC.2 = ifelse(inPLOC.2, "Peak", NA)
+        
+        seqdf.peak <- filter(seqdf, PLOC.1 == "Peak") %>% select(-PLOC.1, -PLOC.2)
+        seqdf.peak$peak.num = row.names(seqdf.peak)
+        
+        attr(seqdf.peak, "filename") = attr
+        attr(seqdf.peak, "seqcall") = ab1@data$PBAS.1
+        return(seqdf.peak)
+        }
+)
+```
+
+
+```{r seq plot, eval = T}
+peak <- lapply(seq_list, function(x){
+        ab1 <- x
+        attr <- attr(ab1, "filename")
+        seqdf <- data.frame(G = ab1@data$DATA.9, 
+                            A = ab1@data$DATA.10,
+                            T = ab1@data$DATA.11,
+                            C = ab1@data$DATA.12)
+        attr(seqdf, "tag") = attr
+        return(seqdf)
+})
+        
+par(mar = c(2, 2, 2, 2))
+par(mfrow= c(6,2))
+
+lapply(seq_along(peak), function(i) {
+        plot(G ~ row.names.data.frame(peak[[i]]), data = peak[[i]], col = "red", type = 'p',  xlim = c(1500, 1560), ylim = c(0, 1500) )
+        points(A ~ row.names.data.frame(peak[[i]]), data = peak[[i]], col = "blue", type = 'p')
+        points(T ~ row.names.data.frame(peak[[i]]), data = peak[[i]], col = "green", type = 'p')
+        points(C ~ row.names.data.frame(peak[[i]]), data = peak[[i]], col = "orange", type = 'p')
+        title(attr(peak[[i]], "tag"))
+        
+})
+
+
+
+```
+
+
+
+```{r SNP loc, results='asis', echo = F}
+seqdf.peak <- lapply(seqdf.peak, function(x) {
+        seq = x
+        call <- attr(seq, "seqcall") 
+        r1 <- regexpr("TGACATTAAAA", call)
+        r2 <- regexpr("AAGGACCCCAA", call)
+        r3 <- regexpr("GGGAGCAGACA", call)
+        r4 <- regexpr("AAAAAACACAA", call)
+        r5 <- regexpr("TACCCCTGAGC", call)
+        r6 <- regexpr("TCATGTAAAAC", call) 
+        
+        rs376101.ind  <- r1[1]+ attr(r1,"match.length")
+        rs4820535.ind <- r2[1]+ attr(r2,"match.length")
+        rs3171722.ind <- r3[1]+ attr(r3,"match.length")
+        rs9623964.ind <- r4[1]+ attr(r4,"match.length")
+        rs2066998.ind <- r5[1]+ attr(r5,"match.length")
+        rs2066997.ind <- r6[1]+ attr(r6,"match.length")
+        
+        snploc0 <- c(rs376101.ind, rs4820535.ind, rs3171722.ind,
+                 rs9623964.ind, rs2066998.ind, rs2066997.ind)
+        snploc <- snploc0[snploc0 > 0] 
+
+        snp <- c("rs376101", "rs4820535", "rs3171722", 
+                 "rs9623964", "rs2066998", "rs2066997")
+        
+        seq$SNP[row.names(seq) %in% snploc] = snp[snploc0 > 0]
+        filename <- seq %>% attr("filename")
+        seq$labeled_copy_num <- strsplit(filename, split = "-")[[1]][2]
+        seq$SNP[is.na(seq$SNP)] = ""
+        seq$adj_major = seq$major/lag(seq$first.peak, 7)
+        seq$adj_minor = seq$minor/lag(seq$first.peak, 7)
+#         seq$adj_peak_t = seq$third.peak/lag(seq$first.peak, 7)
+#         seq$adj_peak_fo = seq$fourth.peak/lag(seq$first.peak, 7)
+        return(seq)
+}) 
+```
+
+
+```{r ratio.1, results='asis', warning = FALSE, message = FALSE, echo = FALSE, include = F}
+## Data summary
+summary <- lapply(seqdf.peak, function(x) {
+        seqdf.peak = x
+        filename = attr(seqdf.peak, "filename")
+        ratio.1 = seqdf.peak$"ratio(f/s)" %in% c("1.4","1.5","1.6", "0.4", "0.5", "0.6")
+        seq.ratio.1 <- filter(seqdf.peak, ratio.1)
+        attr(seq.ratio.1, "filename") = filename
+        seq.ratio.1$file<- strsplit(filename, split = "-")[[1]][1] %>% substr(3,3)
+        seq.ratio.1 = filter(seq.ratio.1, first.peak > 20) %>% select(-SNP)
+        return(seq.ratio.1)
+})
+
+summary_all <- data.frame()
+
+for (i in 1: length(summary)){
+        summary_all <- rbind(summary_all, summary[[i]])
+}
+
+# summary_all <- rbind(rbind(summary[[1]], summary[[2]]), summary[[3]])
+kable(summary_all, align = "c")
+
+```
+
+## SNP calling
+```{r CNV-estimation, results = 'asis'}
+seqdf.peak_all <- data.frame()
+
+for (i in 1: length(seqdf.peak)){
+        seqdf.peak_all <- rbind(seqdf.peak_all, seqdf.peak[[i]])
+}
+
+# seqdf.peak_all <- rbind(rbind(seqdf.peak[[1]], seqdf.peak[[2]]), seqdf.peak[[3]])
+
+SNP.peak <- seqdf.peak_all[!seqdf.peak_all$SNP == "",]
+
+
+Normalization <- function(x) {
+        
+peak_major_bg <- SNP.peak %>% 
+                filter(SNP == "rs4820535" & labeled_copy_num == "3") %>%
+                .$adj_major
+
+peak_minor_bg <- SNP.peak %>% 
+                filter(SNP == "rs4820535" & labeled_copy_num == "1") %>%
+                .$adj_minor
+
+peak_major_homo <- SNP.peak %>% 
+                filter(SNP == "rs4820535" & labeled_copy_num == "1") %>%
+                .$adj_major
+
+peak_minor_homo <- SNP.peak %>% 
+                filter(SNP == "rs4820535" & labeled_copy_num == "3") %>%
+                .$adj_minor
+SNP.peak %>% 
+        filter(SNP == "rs4820535") %>%
+        mutate(n_peak_major = (adj_major - peak_major_bg)/peak_major_homo,
+               n_peak_minor = (adj_minor - peak_minor_bg)/peak_minor_homo,
+               peak.ratio = ifelse(n_peak_major/n_peak_minor >= 1, 
+                                   n_peak_major/(n_peak_minor),
+                                   n_peak_minor/(n_peak_major))) 
+
+
+
+peak_major_bg <- SNP.peak %>% 
+                filter(SNP == "rs376101" & labeled_copy_num == "3") %>%
+                .$adj_major
+
+peak_minor_bg <- SNP.peak %>% 
+                filter(SNP == "rs376101" & labeled_copy_num == "1") %>%
+                .$adj_minor
+
+peak_major_homo <- SNP.peak %>% 
+                filter(SNP == "rs376101" & labeled_copy_num == "1") %>%
+                .$adj_major
+
+peak_minor_homo <- SNP.peak %>% 
+                filter(SNP == "rs376101" & labeled_copy_num == "3") %>%
+                .$adj_minor
+SNP.peak %>% 
+        filter(SNP == "rs376101") %>%
+        mutate(n_peak_major = (adj_major - peak_major_bg)/peak_major_homo,
+               n_peak_minor = (adj_minor - peak_minor_bg)/peak_minor_homo,
+               peak.ratio = ifelse(n_peak_major/n_peak_minor >= 1, 
+                                   n_peak_major/(n_peak_minor),
+                                   n_peak_minor/(n_peak_major))) 
+
+}
+
+# SNP.peak$SNP <- as.factor(SNP.peak$SNP)
+# levels(SNP.peak$SNP) = c("rs376101", "rs4820535", "rs3171722", 
+#                         "rs9623964", "rs2066998", "rs2066997")
+SNP.peak <- arrange(SNP.peak, SNP, labeled_copy_num)
+row.names(SNP.peak) <- NULL
+kable(SNP.peak, align = "c")                        
+```
+
+## Peak ratio distribution
+```{r plot, warning = FALSE, message = FALSE, echo = FALSE, eval = T}
+# hist(seqdf.peak$"ratio(f/s)" ,freq=T, breaks = 0.1)
+science_theme = theme(panel.grid.major = element_line(size = 0.5, color = "grey"),
+                      axis.line = element_line(size = 0.7, color = "black"), 
+#                       legend.position = "none", 
+                      legend.position = c(0.85, 0.85), 
+                      text = element_text(size = 14))   
+
+data = filter(seqdf.peak_all, second.peak > 50)
+        ggplot(data = data, aes(x = data$"ratio(f/s)"))+
+        theme_bw() +
+        geom_bar(binwidth = 0.1, col = "white", fill = "skyblue")+
+        xlim(1,10)+
+        labs(x = "Peak Ratio", title = "")
+```
+
+## Gene Info
+```{r geneInfo, cache = T, results = 'hide', eval = F}
+GeneInfo <- GetGeneInfo(GetIDs("IGLL5[SYM]")) 
+# Interactions <- GetInteractions(GetIDs("IGLL5[SYM]"))
+# GetGOs(GetIDs("IGLL5[SYM]"))
+```
+
+```{r re, results ='asis', eval = T}
+kable(GeneInfo[,c(14, 1:2, 6:7)], align = "l")
+```
+
+
+
+
+```{r snp, cache=T, results = 'asis', eval = F}
+snplist <- c("rs376101", "rs4820535", "rs3171722", "rs9623964", "rs2066998", "rs2066997")
+snp <- GetSNPInfo(snplist)
+kable(snp[,1:7], align = "c")
+
+# scottsobject <- AnnotateSNPList(snp,"Scottsoutputfile.html")
+```
+
+```{r sup, eval=F}
+favSNP <- "rs376101"
+GetSNPFlankSeq(favSNP)
+favSNPInfo <- GetSNPInfo(favSNP)
+GetPathways(GetIDs("CACNA1C[SYM]"))
+GetPhenotypes(GetIDs("CACNA1C[SYM]"))
+```
+
+## SNP Info
+```{r myfunction-snp, cache = T, result = "asis" , eval = T}
+gsnp <- function (SNPs) 
+{
+        SNPs = SNPs[!is.na(SNPs)]        
+    tmp <- sapply(SNPs, function(x) {
+        grep("^rs[0-9]+$", x)
+    })
+    if (any(sapply(tmp, length) == 0)) {
+        stop("not all items supplied are prefixed with 'rs';\n", 
+            "you must supply rs numbers and they should be prefixed with ", 
+            "'rs', e.g. rs420358")
+    }
+    query <- "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=snp&mode=xml&id="
+    query <- paste(sep = "", query, paste(SNPs, collapse = ","))
+    xml <- getURL(query)
+    xml_parsed <- xmlInternalTreeParse(xml)
+    xml_list_ <- xmlToList(xml_parsed)
+    xml_list <- xml_list_[1:(length(xml_list_) - 1)]
+    found_snps <- unname(unlist(sapply(xml_list, function(x) {
+        attr_rsIds <- tryget(x$.attrs["rsId"])
+        merge_indices <- which(names(x) == "MergeHistory")
+        if (length(merge_indices)) {
+            merge_rsIds <- sapply(x[merge_indices], "[[", "rsId")
+        }
+        else {
+            merge_rsIds <- NULL
+        }
+        possible_names <- c(attr_rsIds, merge_rsIds)
+        return(possible_names)
+    })))
+    found_snps <- found_snps[!is.na(found_snps)]
+    found_snps <- paste(sep = "", "rs", found_snps)
+    if (any(!(SNPs %in% found_snps))) {
+        warning("The following rsIds had no information available on NCBI:\n  ", 
+            paste(SNPs[!(SNPs %in% found_snps)], collapse = ", "))
+    }
+    SNPs <- SNPs[SNPs %in% found_snps]
+    out <- as.data.frame(matrix(0, nrow = length(SNPs), ncol = 10))
+    names(out) <- c("Query", "Chromosome", "Marker", "Class", 
+        "Gene", "Alleles", "Major", "Minor", "MAF", "BP")
+    for (i in seq_along(SNPs)) {
+        my_list <- xml_list[[i]]
+        my_chr <- tryget(my_list$Assembly$Component$.attrs["chromosome"])
+        if (is.null(my_chr)) {
+            my_chr <- NA
+            warning("No chromosomal information for ", SNPs[i], 
+                "; may be unmapped")
+        }
+        my_snp <- tryget(my_list$.attrs["rsId"])
+        if (!is.na(my_snp)) {
+            my_snp <- paste(sep = "", "rs", my_snp)
+        }
+        if (my_snp != SNPs[i]) {
+            warning(SNPs[i], " has been merged into ", my_snp)
+        }
+        my_snpClass <- tryget(my_list$.attrs["snpClass"])
+        my_gene <- tryget(my_list$Assembly$Component$MapLoc$FxnSet["symbol"])
+        if (is.null(my_gene)) 
+            my_gene <- NA
+        alleles <- my_list$Ss$Sequence$Observed
+        if (my_snpClass %in% c("snp", "snv")) {
+            tmp <- c(my_list$Ss$Sequence$Observed, my_list$Ss$.attrs["orient"])
+            if (tmp[2] != "forward") {
+                tmp[1] <- flip(tmp[1], sep = "/")
+            }
+            alleles_split <- unlist(strsplit(tmp[1], "/"))
+            maf_allele <- my_list$Frequency["allele"]
+            if (all(maf_allele != alleles_split)) {
+                maf_allele <- swap(maf_allele, c("A", "C", "G", 
+                  "T"), c("T", "G", "C", "A"))
+            }
+            if (my_list$Frequency %>% is.null) maf_allele = NA
+
+            my_minor <- alleles_split[maf_allele == alleles_split]
+            my_major <- alleles_split[maf_allele != alleles_split]
+            my_freq <- my_list$Frequency["freq"]
+            if (my_list$Frequency %>% is.null) my_freq = NA
+        }
+        else {
+            my_minor <- NA
+            my_major <- NA
+            my_freq <- NA
+        }
+        my_pos <- tryCatch(my_list$Assembly$Component$MapLoc$.attrs["physMapInt"], 
+            error = function(e) {
+                my_list$Assembly$Component$MapLoc["physMapInt"]
+            })
+        if (is.null(my_pos)) 
+            my_pos <- NA
+        out[i, ] <- c(SNPs[i], as.integer(my_chr), my_snp, unname(my_snpClass), 
+            unname(my_gene), unname(alleles), unname(my_major), 
+            unname(my_minor), as.numeric(my_freq), as.integer(my_pos))
+    }
+    for (nm in c("MAF", "BP")) {
+        out[, nm] <- as.numeric(out[, nm])
+    }
+    return(out[complete.cases(out),])
+    Sys.sleep(3)
+}
+# snplist <- c("rs376101", "rs4820535", "rs3171722", "rs9623964", "rs2066998", "rs2066997")
+l5_snp <- gsnp(c("rs376101", "rs4820535", "rs3171722", "rs9623964", "rs2066998", "rs2066997")) %>% select(Marker, Chromosome, Gene, Alleles, Major, Minor, MAF, BP)
+kable(l5_snp, align = "c")
+```
+
+```{r snpinL5, cache = T, results = "hide", eval= F}
+## SNPs in IGLL5
+SNPinL5 <- GetSNPsInGenes(GetIDs("IGLL5[SYM]"))
+snp <- GetSNPInfo(SNPinL5)
+
+kable(snp, align = "c")
+```
+
+```{r}
+# 0.3770        0.4697        0.5303
+# 0.3815	0.4719155	0.5280845
+# 0.3765	0.4694955	0.5305045
+# 0.3811	0.47172558	0.52827442
+# 0.4766	0.49890488	0.50109512
+# 0.1997	0.31963982	0.68036018
+# 		
+# 		0.0267545939835478
+```
+
