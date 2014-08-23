@@ -4,8 +4,6 @@ output: html_document
 ---
 
 ```{r setting, message = FALSE, echo=FALSE}
-# test
-
 # output:
 #   knitrBootstrap::bootstrap_document:
 #     theme.chooser: T
