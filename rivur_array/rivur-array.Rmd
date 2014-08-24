@@ -245,19 +245,52 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 ### Chronic constipation
-```{r cor-CHR_CONST, fig.height = 4, fig.width = 10}
-rva1a3_array$dtCHR_CONST_LABEL = unclass(rva1a3_array$CHR_CONST1302) - unclass(rva1a3_array$CHR_CONST0102)
+```{r cor-CHR_CONST, fig.height = 4, fig.width = 14}
+rva1a3_array$dtCHR_CONST = unclass(rva1a3_array$CHR_CONST1302) - unclass(rva1a3_array$CHR_CONST0102)
 
-par(mfrow = c(1,3))
-boxplot(DEFA1.A3.CN ~ CHR_CONST0102, data = rva1a3_array, 
-        xlab = "CHR_CONST0102", ylab = "DEFA1.A3.CN", 
-        notch = T, col = rainbow(2))
-boxplot(DEFA1.A3.CN ~ CHR_CONST1302, data = rva1a3_array, 
-        xlab = "CHR_CONST1302", ylab = "DEFA1.A3.CN",
-        notch = T)
-boxplot(DEFA1.A3.CN ~ dtCHR_CONST_LABEL, data = rva1a3_array, 
-        xlab = "dtCHR_CONST_LABEL", ylab = "DEFA1.A3.CN",
-        col = rainbow(3), notch = T)
+rva1a3_array$dtCHR_CONST_LABEL = recode(rva1a3_array$dtCHR_CONST, 
+                             "-1 = 'Better'; 
+                               0 = 'No Change';
+                               1 = 'Worse'
+                             ")
+
+# par(mfrow = c(1,3))
+# boxplot(DEFA1.A3.CN ~ CHR_CONST0102, data = rva1a3_array, 
+#         xlab = "CHR_CONST0102", ylab = "DEFA1.A3.CN", 
+#         notch = T, col = rainbow(2))
+# boxplot(DEFA1.A3.CN ~ CHR_CONST1302, data = rva1a3_array, 
+#         xlab = "CHR_CONST1302", ylab = "DEFA1.A3.CN",
+#         notch = T)
+# boxplot(DEFA1.A3.CN ~ dtCHR_CONST_LABEL, data = rva1a3_array, 
+#         xlab = "dtCHR_CONST_LABEL", ylab = "DEFA1.A3.CN",
+#         col = rainbow(3), notch = T)
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$CHR_CONST0102), ], aes(y = DEFA1.A3.CN, x = CHR_CONST0102)) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$CHR_CONST1302), ], aes(y = DEFA1.A3.CN, x = CHR_CONST1302)) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtCHR_CONST_LABEL), ], aes(y = DEFA1.A3.CN, x = dtCHR_CONST_LABEL)) +
+        geom_boxplot(aes(fill = dtCHR_CONST_LABEL)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
 ```
 
 ### DMSA scan results
@@ -597,7 +630,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### New Scar
-```{r cor-New Scar, fig.height = 4, fig.width = 14}
+```{r cor-New Scar, fig.height = 4, fig.width = 8}
 rva1a3_array$SCAR_NEW04_LABEL = recode(rva1a3_array$SCAR_NEW04, " 0 = 'No'; 1 = 'Yes'")
 
 
