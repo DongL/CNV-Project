@@ -378,7 +378,7 @@ rva1a3_array$DM6B_13_LABEL = factor(rva1a3_array$DM6B_13_LABEL, c("None", 'Mild'
 
 ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_01_LABEL)) +
 #         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        geom_boxplot(aes(fill = DM6B_01_LABEL)) +
+        geom_boxplot() +
         scale_y_continuous(breaks = 3:14) +
         scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
 #         facet_grid(.~TXGROUP) +
@@ -436,7 +436,167 @@ plot = list(p1, p2, p3)
 do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
+#### Worst Scarring
+```{r r cor-Worst Scarring, fig.height = 4, fig.width = 14}
+rva1a3_array$dtWORST_SCARRING = unclass(rva1a3_array$WORST_SCARRING1301) - unclass(rva1a3_array$WORST_SCARRING0101)
 
+rva1a3_array$WORST_SCARRING0101_LABEL = recode(rva1a3_array$WORST_SCARRING0101, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rva1a3_array$WORST_SCARRING0101_LABEL = factor(rva1a3_array$WORST_SCARRING0101_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+rva1a3_array$WORST_SCARRING1301_LABEL = recode(rva1a3_array$WORST_SCARRING1301, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rva1a3_array$WORST_SCARRING1301_LABEL = factor(rva1a3_array$WORST_SCARRING1301_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING0101_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING0101_LABEL)) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING1301_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING1301_LABEL)) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING), ], aes(y = DEFA1.A3.CN, x = factor(dtWORST_SCARRING))) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(breaks = -1:4) +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING0101_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING0101_LABEL)) +
+        geom_point(position = "", col = "blue") +
+        stat_sum(aes(size = ..n..), col = "blue") +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING1301_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING1301_LABEL)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING), ], aes(y = DEFA1.A3.CN, x = dtWORST_SCARRING)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_continuous(breaks = -1:3) +
+        theme_bw() +
+        science_theme -> p3
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+```
+
+#### Side with Worst Scarring
+```{r r cor-Side with Worst Scarring, fig.height = 4, fig.width = 14}
+# rva1a3_array$WORST_SCARRING_SIDE1301_ = recode(rva1a3_array$WORST_SCARRING_SIDE1301, "'B' = NA; 'N' = NA")
+# rva1a3_array$WORST_SCARRING_SIDE0101_ = recode(rva1a3_array$WORST_SCARRING_SIDE0101, "'B' = NA; 'N' = NA")
+
+rva1a3_array$dtWORST_SCARRING_SIDE = unclass(rva1a3_array$WORST_SCARRING_SIDE1301) - unclass(rva1a3_array$WORST_SCARRING_SIDE0101)
+
+rva1a3_array$dtWORST_SCARRING_SIDE_LABEL = recode(rva1a3_array$dtWORST_SCARRING_SIDE, 
+                             " 0 = 'No Change'; 
+                               1 = 'Change';
+                               2 = 'Change';
+                              -1 = 'Change'
+                             ")
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE0101), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE0101)) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE1301), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE1301)) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING_SIDE_LABEL), ], aes(y = DEFA1.A3.CN, x = factor(dtWORST_SCARRING_SIDE_LABEL))) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE0101), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE0101)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE1301), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE1301)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING_SIDE_LABEL), ], aes(y = DEFA1.A3.CN, x = dtWORST_SCARRING_SIDE_LABEL)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p3
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
+```
+
+#### New Scar
 
 
 ## Caucasian Female
