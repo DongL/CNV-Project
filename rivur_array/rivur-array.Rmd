@@ -254,7 +254,7 @@ boxplot(DEFA1.A3.CN ~ dtCHR_CONST_LABEL, data = rva1a3_array,
 
 ### DMSA scan results
 #### Scarring for right side
-```{r cor-DMSA, fig.height = 4, fig.width = 14}
+```{r cor-DMSA-right, fig.height = 4, fig.width = 14}
 rva1a3_array$dtDM6A = unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)
 
 rva1a3_array$DM6A_01_LABEL = recode(rva1a3_array$DM6A_01, 
@@ -346,6 +346,27 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### Scarring for left side
+```{r r cor-DMSA-left, fig.height = 4, fig.width = 14}
+rva1a3_array$dtDM6A = unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)
+
+rva1a3_array$DM6A_01_LABEL = recode(rva1a3_array$DM6A_01, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rva1a3_array$DM6A_01_LABEL = factor(rva1a3_array$DM6A_01_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+rva1a3_array$DM6A_13_LABEL = recode(rva1a3_array$DM6A_13, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rva1a3_array$DM6A_13_LABEL = factor(rva1a3_array$DM6A_13_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+```
 
 
 
