@@ -253,6 +253,7 @@ boxplot(DEFA1.A3.CN ~ dtCHR_CONST_LABEL, data = rva1a3_array,
 ```
 
 ### DMSA scan results
+#### Scarring for right side
 ```{r cor-DMSA, fig.height = 4, fig.width = 14}
 rva1a3_array$dtDM6A = unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)
 
@@ -342,12 +343,9 @@ ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = dtD
 plot = list()
 plot = list(p1, p2, p3)
 do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
-
-
-
-
-
 ```
+
+#### Scarring for left side
 
 
 
