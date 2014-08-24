@@ -7,7 +7,7 @@ output:
     highlight.chooser: TRUE
 ---
 
-RIVUR - DEFA1A3
+RIVUR - DEFA1A3 
 ===========
 
 
@@ -137,7 +137,7 @@ boxplot(DEFA1.A3.CN ~ BBD1302, data = rva1a3_array,
         xlab = "BBD1302", ylab = "DEFA1.A3.CN")
 boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
         xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
-        col = rainbow(3))
+        col = rainbow(3), notch = T)
 ```
 
 
