@@ -520,7 +520,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### Side with Worst Scarring
-```{r r cor-Side with Worst Scarring, fig.height = 4, fig.width = 14}
+```{r cor-Side with Worst Scarring, fig.height = 4, fig.width = 14}
 # rva1a3_array$WORST_SCARRING_SIDE1301_ = recode(rva1a3_array$WORST_SCARRING_SIDE1301, "'B' = NA; 'N' = NA")
 # rva1a3_array$WORST_SCARRING_SIDE0101_ = recode(rva1a3_array$WORST_SCARRING_SIDE0101, "'B' = NA; 'N' = NA")
 
@@ -597,7 +597,31 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### New Scar
+```{r cor-New Scar, fig.height = 4, fig.width = 14}
+rva1a3_array$SCAR_NEW04_LABEL = recode(rva1a3_array$SCAR_NEW04, " 0 = 'No'; 1 = 'Yes'")
 
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$SCAR_NEW04_LABEL), ], aes(y = DEFA1.A3.CN, x = SCAR_NEW04_LABEL)) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$SCAR_NEW04_LABEL), ], aes(y = DEFA1.A3.CN, x = SCAR_NEW04_LABEL)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme -> p2
+
+plot = list()
+plot = list(p1, p2)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
+```
 
 ## Caucasian Female
 ```{r C-F, eval=F}
