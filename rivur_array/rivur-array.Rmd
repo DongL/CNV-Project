@@ -1,7 +1,15 @@
 ---
-title: "RIVUR - DEFA1A3"
-output: html_document
+output:
+  knitrBootstrap::bootstrap_document:
+    theme: default
+    highlight: sunburst
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
 ---
+
+RIVUR - DEFA1A3
+===========
+
 
 ```{r setting, message = FALSE, echo=FALSE}
 # output:
@@ -26,7 +34,7 @@ opts_chunk$set(dev=c("svg"),
               fig.height = 6, fig.width = 8)
 opts_chunk$set(fig.show="hold")
 opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
-opts_chunk$set(bootstrap.thumbnail.size='col-md-7', 
+opts_chunk$set(bootstrap.thumbnail.size='col-md-12', 
                bootstrap.thumbnail = T,
                bootstrap.panel = T)
 
@@ -347,25 +355,85 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 
 #### Scarring for left side
 ```{r r cor-DMSA-left, fig.height = 4, fig.width = 14}
-rva1a3_array$dtDM6A = unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)
+rva1a3_array$dtDM6B = unclass(rva1a3_array$DM6B_13) - unclass(rva1a3_array$DM6B_01)
 
-rva1a3_array$DM6A_01_LABEL = recode(rva1a3_array$DM6A_01, 
+rva1a3_array$DM6B_01_LABEL = recode(rva1a3_array$DM6B_01, 
                              "'A' = 'None'; 
                               'B' = 'Mild';
                               'C' = 'Moderate';
                               'D' = 'Severe';
                               'E' = 'G. Atrophy'
                              ")
-rva1a3_array$DM6A_01_LABEL = factor(rva1a3_array$DM6A_01_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+rva1a3_array$DM6B_01_LABEL = factor(rva1a3_array$DM6B_01_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
 
-rva1a3_array$DM6A_13_LABEL = recode(rva1a3_array$DM6A_13, 
+rva1a3_array$DM6B_13_LABEL = recode(rva1a3_array$DM6B_13, 
                              "'A' = 'None'; 
                               'B' = 'Mild';
                               'C' = 'Moderate';
                               'D' = 'Severe';
                               'E' = 'G. Atrophy'
                              ")
-rva1a3_array$DM6A_13_LABEL = factor(rva1a3_array$DM6A_13_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+rva1a3_array$DM6B_13_LABEL = factor(rva1a3_array$DM6B_13_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_01_LABEL)) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot(aes(fill = DM6B_01_LABEL)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_13_LABEL)) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6B), ], aes(y = DEFA1.A3.CN, x = factor(dtDM6B))) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(breaks = -1:4) +
+#         facet_grid(.~TXGROUP)
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_01_LABEL)) +
+        geom_point(position = "", col = "blue") +
+        stat_sum(aes(size = ..n..), col = "blue") +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_13_LABEL)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6B), ], aes(y = DEFA1.A3.CN, x = dtDM6B)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_continuous(breaks = -1:3) +
+        theme_bw() +
+        science_theme -> p3
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 
