@@ -790,10 +790,20 @@ lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_arra
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
+### Number of UTI’s
+```{r cor-PRIORUTI, fig.height = 4, fig.width = 14}
+va <- c("PRIORUTI0101", "NUM_UTI01")
+rva1a3_array$PRIORUTI0101 = as.factor(rva1a3_array$PRIORUTI0101)
+rva1a3_array$NUM_UTI01 = as.factor(rva1a3_array$NUM_UTI01)
 
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
-
-
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
+```
 
 
 
