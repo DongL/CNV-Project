@@ -98,8 +98,8 @@ hist(rva1a3_array$DEFA1.A3.CN, xlab = "DEFA1A3.CN")
 
 ## Correlation
 ### Race & Age 
-```{r cor, fig.height = 4, fig.width = 10}
-rva1a3_array$RACE0102_EXP = recode(rva1a3_array$RACE0102, 
+```{r cor, fig.height = 5, fig.width = 16}
+rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102, 
                              "1 = 'White'; 
                               2 = 'Black';
                               3 = 'Asian';
@@ -109,14 +109,36 @@ rva1a3_array$RACE0102_EXP = recode(rva1a3_array$RACE0102,
                               7 = 'Mixed';
                               8 = 'Missing'
                              ")
-par(mfrow = c(1,2))
-boxplot(DEFA1.A3.CN ~ RACE0102_EXP, data = rva1a3_array, 
-        xlab = "Race", ylab = "DEFA1.A3.CN",
-        col = rainbow(7),
-        notch = T)
-boxplot(DEFA1.A3.CN ~ SEX0101, data = rva1a3_array, 
-        xlab = "Sex", ylab = "DEFA1.A3.CN",
-        notch = T, varwidth = F)
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$RACE0102_LABEL),], aes(x = RACE0102_LABEL, y = DEFA1.A3.CN, fill =RACE0102_LABEL)) +
+        geom_boxplot() +
+#         geom_point(position = "jitter")+
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$SEX0101),], aes(x = SEX0101, y = DEFA1.A3.CN, fill = SEX0101)) +
+        geom_boxplot() +
+#         geom_point(position = "jitter")+
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p2
+
+plot = list()
+plot = list(p1, p2)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
+
+# 
+# par(mfrow = c(1,2))
+# boxplot(DEFA1.A3.CN ~ RACE0102_LABEL, data = rva1a3_array, 
+#         xlab = "Race", ylab = "DEFA1.A3.CN",
+#         col = rainbow(7),
+#         notch = T)
+# boxplot(DEFA1.A3.CN ~ SEX0101, data = rva1a3_array, 
+#         xlab = "Sex", ylab = "DEFA1.A3.CN",
+#         notch = T, varwidth = F)
 
 ```
 
@@ -655,6 +677,78 @@ plot = list()
 plot = list(p1, p2)
 do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
 ```
+
+### Grade and laterality (left/right/both) of vesicoureteral reflux
+#### Highest grade of reflux for left ureter
+```{r cor-New Scar, fig.height = 4, fig.width = 8}
+rva1a3_array$dtVR_3L = rva1a3_array$VR_3L_1301 - rva1a3_array$VR_3L_0101
+
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$VR_3L_0101), ], aes(y = DEFA1.A3.CN, x = factor(VR_3L_0101))) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p1
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$VR_3L_1301), ], aes(y = DEFA1.A3.CN, x = factor(VR_3L_1301))) +
+        geom_boxplot(aes(fill = factor(VR_3L_1301) )) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p2
+
+ggplot(rva1a3_array[!is.na(rva1a3_array$dtVR_3L), ], aes(y = DEFA1.A3.CN, x = factor(dtVR_3L))) +
+        geom_boxplot() +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> p3
+
+plot = list()
+plot = list(p1, p2, p3)
+do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+```
+
+
+#### Highest grade of reflux for right ureter
+```{r cor-New Scar, fig.height = 4, fig.width = 8}
+rva1a3_array$dtVR_3L = rva1a3_array$VR_3L_1301 - rva1a3_array$VR_3L_0101
+
+va <- c("VR_3L_0101", "VR_3L_1301", "dtVR_3L")
+p = list()
+lapply(1:3, function(i) {
+#         i = 1:3
+        a = rva1a3_array[va[i]]
+        b = rva1a3_array[!is.na(a), ][,va[i]]
+        ggplot(rva1a3_array[!is.na(a), ], aes(y = DEFA1.A3.CN, x = factor(b))) +
+#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+        geom_boxplot() +
+        xlab(va[i]) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+#         facet_grid(.~TXGROUP) +
+        theme_bw() +
+        science_theme -> pl
+        return(pl)
+}) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
+
+
+```
+
+
+
+
+
+
 
 ## Caucasian Female
 ```{r C-F, eval=F}
