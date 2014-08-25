@@ -725,13 +725,6 @@ va <- c("VR_3R_0101", "VR_3R_1301", "dtVR_3R")
 rva1a3_array$VR_3R_0101 = as.factor(rva1a3_array$VR_3R_0101)
 rva1a3_array$VR_3R_1301 = as.factor(rva1a3_array$VR_3R_1301)
 
-plt <- function(df, x, y){
-        ggplot(df, aes_string(y = y, x = x)) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        theme_bw() +
-        science_theme
-}
 
 p = list()
 lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
@@ -743,8 +736,23 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
 
+#### Highest Grade of reflux between both ureters
+```{r cor-HIGHEST_REFLUX, fig.height = 4, fig.width = 14}
+rva1a3_array$dtHIGHEST_REFLUX = as.factor(unclass(rva1a3_array$HIGHEST_REFLUX1301) - unclass(rva1a3_array$HIGHEST_REFLUX0101))
 
+va <- c("HIGHEST_REFLUX0101", "HIGHEST_REFLUX1301", "dtHIGHEST_REFLUX")
 
+rva1a3_array$HIGHEST_REFLUX0101 = as.factor(rva1a3_array$HIGHEST_REFLUX0101)
+rva1a3_array$HIGHEST_REFLUX1301 = as.factor(rva1a3_array$HIGHEST_REFLUX1301)
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+```
 
 
 ## Caucasian Female
