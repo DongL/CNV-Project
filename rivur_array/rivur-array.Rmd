@@ -754,6 +754,48 @@ lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_arra
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
+#### Side with highest grade of reflux between both ureters
+```{r cor-HIGHEST_REFLUX_SIDE, fig.height = 4, fig.width = 14}
+rva1a3_array$dtHIGHEST_REFLUX_SIDE = as.factor(unclass(rva1a3_array$HIGHEST_REFLUX_SIDE1301) - unclass(rva1a3_array$HIGHEST_REFLUX_SIDE0101))
+
+va <- c("HIGHEST_REFLUX_SIDE0101", "HIGHEST_REFLUX_SIDE1301", "dtHIGHEST_REFLUX_SIDE")
+
+rva1a3_array$HIGHEST_REFLUX_SIDE0101 = as.factor(rva1a3_array$HIGHEST_REFLUX_SIDE0101)
+rva1a3_array$HIGHEST_REFLUX_SIDE1301 = as.factor(rva1a3_array$HIGHEST_REFLUX_SIDE1301)
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+```
+
+#### VUR lateral
+```{r cor-VUR_LATERAL, fig.height = 4, fig.width = 14}
+rva1a3_array$dtVUR_LATERAL = as.factor(unclass(rva1a3_array$VUR_LATERAL1301) - unclass(rva1a3_array$VUR_LATERAL0101))
+
+va <- c("VUR_LATERAL0101", "VUR_LATERAL1301", "dtVUR_LATERAL")
+
+rva1a3_array$VUR_LATERAL0101 = as.factor(rva1a3_array$VUR_LATERAL0101)
+rva1a3_array$VUR_LATERAL1301 = as.factor(rva1a3_array$VUR_LATERAL1301)
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+```
+
+
+
+
+
+
+
 
 ## Caucasian Female
 ```{r C-F, eval=F}
