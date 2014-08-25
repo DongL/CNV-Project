@@ -1,14 +1,19 @@
 ---
 output:
+  html_document:
+    theme: cerulean
+---
+
+RIVUR - DEFA1A3 
+===========
+```{r output, eval = F, echo = F}
+output:
   knitrBootstrap::bootstrap_document:
     theme: default
     highlight: sunburst
     theme.chooser: TRUE
     highlight.chooser: TRUE
----
-
-RIVUR - DEFA1A3 
-===========
+```
 
 
 ```{r setting, message = FALSE, echo=FALSE}
@@ -805,7 +810,30 @@ lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_arra
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
+### Fevers with each episode
+```{r cor-TYPE0103, fig.height = 4, fig.width = 14}
+va <- c("UTI_TYPE0103")
+rva1a3_array$UTI_TYPE0103 = as.factor(rva1a3_array$UTI_TYPE0103)
 
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
+
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
+```
+
+### Type of Bacteria in each UTI 
+#### Number of organisms present for the index UTI
+```{r cor-NUMORG0101, fig.height = 3, fig.width = 12}
+va <- c("NUMORG0101")
+rva1a3_array$NUMORG0101 = as.factor(rva1a3_array$NUMORG0101)
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
+
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
+```
 
 ## Caucasian Female
 ```{r C-F, eval=F}
