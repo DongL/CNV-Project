@@ -2,6 +2,7 @@
 output:
   html_document:
     theme: cerulean
+  pdf_document: default
 ---
 
 RIVUR - DEFA1A3 
@@ -14,7 +15,6 @@ output:
     theme.chooser: TRUE
     highlight.chooser: TRUE
 ```
-
 
 ```{r setting, message = FALSE, echo=FALSE}
 # output:
@@ -44,13 +44,34 @@ opts_chunk$set(bootstrap.thumbnail.size='col-md-12',
                bootstrap.panel = T)
 
 # source("/Users/DL/Documents/R project/Memphis - Copy Number Variation/Functions/myFunction.R")
+ 
+```
 
+```{r myfunction, echo = F}
 science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
                       axis.line = element_line(size = 0.5, color = "black"), 
                       legend.position = "none", 
 #                       legend.position = c(0.85, 0.85),
                       plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
-                      text = element_text(size = 14))   
+                      text = element_text(size = 14))  
+
+plt <- function(df, x, y){
+        ggplot(df, aes_string(y = y, x = x)) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        theme_bw() +
+        science_theme
+}
+
+plt_point <- function(df, x, y){
+        ggplot(df, aes_string(y = y, x = x)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme
+}
 ```
 
 ```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
@@ -60,6 +81,7 @@ science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"
 rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 names(rva1a3_array) = toupper(names(rva1a3_array))
 
+rva1a3_array = filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
 
 # str(rva1a3)
 # dim(rva1a3)
@@ -693,23 +715,6 @@ va <- c("VR_3L_0101", "VR_3L_1301", "dtVR_3L")
 rva1a3_array$VR_3L_0101 = as.factor(rva1a3_array$VR_3L_0101)
 rva1a3_array$VR_3L_1301 = as.factor(rva1a3_array$VR_3L_1301)
 
-plt <- function(df, x, y){
-        ggplot(df, aes_string(y = y, x = x)) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        theme_bw() +
-        science_theme
-}
-plt_point <- function(df, x, y){
-        ggplot(df, aes_string(y = y, x = x)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme
-}
-
 p = list()
 lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
@@ -719,7 +724,6 @@ lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_arra
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
-
 
 #### Highest grade of reflux for right ureter
 ```{r cor-VR-R, fig.height = 4, fig.width = 14}
@@ -824,7 +828,7 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
 ### Type of Bacteria in each UTI 
 #### Number of organisms present for the index UTI
-```{r cor-NUMORG0101, fig.height = 3, fig.width = 12}
+```{r cor-NUMORG0101, fig.height = 4, fig.width = 12}
 va <- c("NUMORG0101")
 rva1a3_array$NUMORG0101 = as.factor(rva1a3_array$NUMORG0101)
 
@@ -835,101 +839,46 @@ lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_arra
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
-## Caucasian Female
-```{r C-F, eval=F}
-cf <- filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
+#### Primary and secondary species for the index UTI
+```{r cor-SPECIES0101, fig.height = 4, fig.width = 12}
+va <- c("PORG_SPECIES0101", "SORG_SPECIES0101")
+rva1a3_array$PORG_SPECIES0101 = as.factor(rva1a3_array$PORG_SPECIES0101)
+rva1a3_array$SORG_SPECIES0101 = as.factor(rva1a3_array$SORG_SPECIES0101)
 
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
-
-cf %>% group_by(PRIORUTI0101) %>%
-        summarize(mean(DEFA1.A3.CN), n())
-cf %>% group_by(NUM_UTI01) %>%
-        summarize(mean(DEFA1.A3.CN), n())
-cf$DEFA1.A3.CN = as.numeric(cf$DEFA1.A3.CN)
-
-par(mfrow = c(2,2))
-plot(cf$DEFA1.A3.CN ~ cf$PRIORUTI0101)
-plot(DEFA1.A3.CN ~ AGE0101, data = cf)
-plot(DEFA1.A3.CN ~ NUM_UTI01, data = cf)
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
-```{r plot, eval=F}
-ggplot(cf, aes(x = NUM_UTI01, y = DEFA1.A3.CN)) + 
-        geom_boxplot() +
-        geom_point(position = "jitter")+
-        theme_bw() +
-        science_theme
+#### Type of bacteria in first F/S UTI 
+```{r cor-USRORG13A01, fig.height = 4, fig.width = 12}
+va <- c("USRORG13A01")
+rva1a3_array$USRORG13A01 = as.factor(rva1a3_array$USRORG13A01)
 
-# lm(DEFA1.A3.CN ~ NUM_UTI01, data = cf) %>% summary
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
 
-ggplot(cf, aes(x = as.factor(DVQSCORE0104), y = as.numeric(DEFA1.A3.CN))) + 
-        geom_boxplot() +
-        geom_point(position = "jitter")+
-        theme_bw() +
-        science_theme
-        
-ggplot(cf, aes(x = as.factor(URINE_RES07), y = as.numeric(DEFA1.A3.CN))) + 
-        geom_boxplot() +
-        geom_point(position = "jitter")+
-        theme_bw() +
-        science_theme
-
-ggplot(cf, aes(x = as.factor(USRORG13A01), y = as.numeric(DEFA1.A3.CN))) + 
-        geom_boxplot(aes(fill = USRORG13A01)) +
-        geom_point(position = "jitter")+
-        theme_classic() +
-        science_theme
-
-        
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
+### Sensitivities of Bacteria for first F/S UTI 
+```{r cor-URINE_RES07, fig.height = 4, fig.width = 12}
+rva1a3_array$URINE_RES07 = as.factor(rva1a3_array$URINE_RES07)
+rva1a3_array$URINE_RES07_LABEL = recode(rva1a3_array$URINE_RES07, 
+                             "'R' = 'Resistant'; 
+                              'S' = 'Sensitive'
+                             ")
+va <- c("URINE_RES07_LABEL")
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
 
-```{r vesicoureteral reflux, eval=F}
-names(cf) = toupper(names(cf))
-cf %>% mutate(dtVR_3L = as.numeric(VR_3L_1301) - as.numeric(VR_3L_0101),
-              dtVR_3R = as.numeric(VR_3R_1301) - as.numeric(VR_3R_0101),
-              dtHIGHEST_REFLUX = as.numeric(HIGHEST_REFLUX1301) - as.numeric(HIGHEST_REFLUX0101),
-              dtHIGHEST_REFLUX_SIDE = ifelse(HIGHEST_REFLUX_SIDE0101==HIGHEST_REFLUX_SIDE1301, 'NO', "YES"),
-              dtDVQSCORE = as.numeric(DVQSCORE1304) - as.numeric(DVQSCORE0104)
-              ) %>%
-        select(dtVR_3L : dtDVQSCORE, DEFA1.A3.CN, TXGROUP, SEX0101)  ->cf_prog
-
-cf_prog %>% 
-        ggplot(., aes(x = dtVR_3L, y = DEFA1.A3.CN)) +
-        geom_point(position = "jitter") +
-        geom_smooth(method = "lm") +
-        facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme
-
-
-ggplot(data = cf_prog, aes(y = DEFA1.A3.CN, x = dtDVQSCORE)) +  
-        geom_point(position = "jitter") +
-        geom_smooth(method = "lm") +
-        facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme
-
-# pl = list()
-# plot <- lapply(seq_along(names(cf_prog)), function(i) {
-#         var = names(cf_prog)[i]
-#         
-#         pl <- ggplot(data = cf_prog, aes(y = DEFA1.A3.CN, x = var)) +  
-#                 geom_point(position = "jitter") +
-#                 geom_smooth(method = "lm") +
-#                 facet_grid(.~TXGROUP) +
-#                 theme_bw() +
-#                 science_theme
-#         
-#         pl
-# })
-# 
-# do.call(grid.arrange, c(plot, list(nrow = 4, ncol =2)))
-
-```
-
-```{r tblplot, eval=F}
-
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
 
