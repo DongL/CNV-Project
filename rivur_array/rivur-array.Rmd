@@ -118,7 +118,7 @@ ggplot(rva1a3_array[!is.na(rva1a3_array$RACE0102_LABEL),], aes(x = RACE0102_LABE
         theme_bw() +
         science_theme -> p1
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$SEX0101),], aes(x = SEX0101, y = DEFA1.A3.CN, fill = SEX0101)) +
+ggplot(rva1a3_array[!is.na(rva1a3_array$SEX0101),], aes(x = SEX0101, y = DEFA1.A3.CN)) +
         geom_boxplot() +
 #         geom_point(position = "jitter")+
         scale_x_discrete() +
@@ -680,71 +680,51 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
 
 ### Grade and laterality (left/right/both) of vesicoureteral reflux
 #### Highest grade of reflux for left ureter
-```{r cor-New Scar, fig.height = 4, fig.width = 8}
-rva1a3_array$dtVR_3L = rva1a3_array$VR_3L_1301 - rva1a3_array$VR_3L_0101
+```{r cor-VR-L, fig.height = 4, fig.width = 14}
+rva1a3_array$dtVR_3L = as.factor(unclass(rva1a3_array$VR_3L_1301) - unclass(rva1a3_array$VR_3L_0101))
 
+va <- c("VR_3L_0101", "VR_3L_1301", "dtVR_3L")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$VR_3L_0101), ], aes(y = DEFA1.A3.CN, x = factor(VR_3L_0101))) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+rva1a3_array$VR_3L_0101 = as.factor(rva1a3_array$VR_3L_0101)
+rva1a3_array$VR_3L_1301 = as.factor(rva1a3_array$VR_3L_1301)
+
+plt <- function(df, x, y){
+        ggplot(df, aes_string(y = y, x = x)) +
         geom_boxplot() +
         scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
         theme_bw() +
-        science_theme -> p1
+        science_theme
+}
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$VR_3L_1301), ], aes(y = DEFA1.A3.CN, x = factor(VR_3L_1301))) +
-        geom_boxplot(aes(fill = factor(VR_3L_1301) )) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p2
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtVR_3L), ], aes(y = DEFA1.A3.CN, x = factor(dtVR_3L))) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p3
-
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
 
 #### Highest grade of reflux for right ureter
-```{r cor-New Scar, fig.height = 4, fig.width = 8}
-rva1a3_array$dtVR_3L = rva1a3_array$VR_3L_1301 - rva1a3_array$VR_3L_0101
+```{r cor-VR-R, fig.height = 4, fig.width = 14}
+rva1a3_array$dtVR_3R = as.factor(unclass(rva1a3_array$VR_3R_1301) - unclass(rva1a3_array$VR_3R_0101))
 
-va <- c("VR_3L_0101", "VR_3L_1301", "dtVR_3L")
-p = list()
-lapply(1:3, function(i) {
-#         i = 1:3
-        a = rva1a3_array[va[i]]
-        b = rva1a3_array[!is.na(a), ][,va[i]]
-        ggplot(rva1a3_array[!is.na(a), ], aes(y = DEFA1.A3.CN, x = factor(b))) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
+va <- c("VR_3R_0101", "VR_3R_1301", "dtVR_3R")
+
+rva1a3_array$VR_3R_0101 = as.factor(rva1a3_array$VR_3R_0101)
+rva1a3_array$VR_3R_1301 = as.factor(rva1a3_array$VR_3R_1301)
+
+plt <- function(df, x, y){
+        ggplot(df, aes_string(y = y, x = x)) +
         geom_boxplot() +
-        xlab(va[i]) +
         scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
         theme_bw() +
-        science_theme -> pl
-        return(pl)
-}) -> p
+        science_theme
+}
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
-
-
-
 ```
-
-
 
 
 
