@@ -62,7 +62,7 @@ plt_s <- function(df, x, y){
         science_theme
 }
 
-plt <- function(df, x, y){
+plt_oneway <- function(df, x, y){
         p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
 #         print(p)
         if(p > 0.2 | p == "NaN" | !exists("p")) {
@@ -71,6 +71,27 @@ plt <- function(df, x, y){
                 scale_y_continuous(breaks = 3:14) +
                 theme_bw() +
                 science_theme
+        } else
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_boxplot(aes_string(fill = x)) +
+                scale_y_continuous(breaks = 3:14) +
+                theme_bw() +
+                science_theme
+}
+
+plt <- function(df, x, y){
+        df_l = "rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != 'NA'), ]"
+        para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
+        FUN_TABLE <- paste0("table",  para)
+        p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
+        p = p.chisq
+        print(p)
+        if(p > 0.3 | p == "NaN" | !exists("p")) {
+                ggplot(df, aes_string(y = y, x = x)) +
+                        geom_boxplot() +
+                        scale_y_continuous(breaks = 3:14) +
+                        theme_bw() +
+                        science_theme
         } else
                 ggplot(df, aes_string(y = y, x = x)) +
                 geom_boxplot(aes_string(fill = x)) +
@@ -90,15 +111,14 @@ plt_point_s <- function(df, x, y){
 }
 
 plt_point <- function(df, x, y){
-#         x = "dtCHR_CONST_LABEL"
-#         x = "dtHIGHEST_REFLUX"
-#         y = "DEFA1.A3.CN"
-#         df = rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != "NA"), ]
-#                 df[x] = factor(df[,x])
-#         df = rva1a3_array[!is.na(rva1a3_array["dtHIGHEST_REFLUX"]) & (rva1a3_array["dtHIGHEST_REFLUX"] != "NA"), ]
-        oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
-#         print(oneway_p)
-        if(oneway_p > 0.2 | oneway_p == "NaN") {
+#         oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
+        df_l = "rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != 'NA'), ]"
+        para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
+        FUN_TABLE <- paste0("table",  para)
+        p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
+        p = p.chisq
+#         print(p)
+        if(p > 0.3| p == "NaN") {
                 ggplot(df, aes_string(y = y, x = x)) +
                         geom_point(position = "") +
                         stat_sum(aes(size = ..n..)) +
@@ -183,10 +203,6 @@ rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102,
 
 va <- c("RACE0102_LABEL", "SEX0101")
 
-# rva1a3_array$CHR_CONST0102 = as.factor(rva1a3_array$CHR_CONST0102)
-# rva1a3_array$CHR_CONST1302 = as.factor(rva1a3_array$CHR_CONST1302)
-# rva1a3_array$dtCHR_CONST = as.factor(rva1a3_array$dtCHR_CONST)
-
 p = list()
 lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
@@ -195,27 +211,6 @@ p = list()
 lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$RACE0102_LABEL),], aes(x = RACE0102_LABEL, y = DEFA1.A3.CN, fill =RACE0102_LABEL)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter")+
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$SEX0101),], aes(x = SEX0101, y = DEFA1.A3.CN)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter")+
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p2
-
-plot = list()
-plot = list(p1, p2)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
-
-# 
 # par(mfrow = c(1,2))
 # boxplot(DEFA1.A3.CN ~ RACE0102_LABEL, data = rva1a3_array, 
 #         xlab = "Race", ylab = "DEFA1.A3.CN",
@@ -227,10 +222,8 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
 
 ```
 
-> Among all the races recoded, Asian population tends to have highest copy number of DEFA1A3 with median copy number value of DEFA1A3 at 7.
-
 ### Bladder and bowel movement dysfunction
-```{r cor2, fig.height = 4, fig.width = 14}
+```{r cor - BBD, fig.height = 4, fig.width = 14}
 rva1a3_array$dtBBD = rva1a3_array$BBD1302 - rva1a3_array$BBD0102
 rva1a3_array$dtBBD_LABEL = recode(rva1a3_array$dtBBD, 
                              "1 = 'Worse'; 
@@ -261,8 +254,6 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 #         col = rainbow(3), notch = T)
 ```
 
-
-> Higher copy number of DEFA1A3 appears to be associated with better dtBBD score (changing from socre 1 to 0, indicative of BBD getting better) two years after intial recruitment.
 
 ```{r ddBBD by TXGROUP, eval = F}
 ggplot(rva1a3_array, aes(x = dtBBD_EXP, y = DEFA1.A3.CN, fill = dtBBD_EXP)) +
@@ -323,11 +314,11 @@ rva1a3_array$DVQSCORE1304_F = as.factor(rva1a3_array$DVQSCORE1304)
 rva1a3_array$dtDVQSCORE = as.factor(rva1a3_array$dtDVQSCORE)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 # par(mfrow = c(1,3))
@@ -423,7 +414,7 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ### DMSA scan results
 #### Scarring for right side
 ```{r cor-DMSA-right, fig.height = 4, fig.width = 14}
-rva1a3_array$dtDM6A = unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)
+rva1a3_array$dtDM6A = (unclass(rva1a3_array$DM6A_13) - unclass(rva1a3_array$DM6A_01)) %>% as.factor
 
 rva1a3_array$DM6A_01_LABEL = recode(rva1a3_array$DM6A_01, 
                              "'A' = 'None'; 
@@ -454,68 +445,21 @@ rva1a3_array$DM6A_13_LABEL = factor(rva1a3_array$DM6A_13_LABEL, c("None", 'Mild'
 #         xlab = "dtDM6A", ylab = "DEFA1.A3.CN", 
 #         notch = T, col = rainbow(5))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_01_LABEL)) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        geom_boxplot(aes(fill = DM6A_01_LABEL)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
+va <- c("DM6A_01_LABEL", "DM6A_13_LABEL", "dtDM6A")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_13_LABEL)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p2
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = factor(dtDM6A))) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(breaks = -1:4) +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p3
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_01_LABEL)) +
-        geom_point(position = "", col = "blue") +
-        stat_sum(aes(size = ..n..), col = "blue") +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6A_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6A_13_LABEL)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6A), ], aes(y = DEFA1.A3.CN, x = dtDM6A)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_continuous(breaks = -1:3) +
-        theme_bw() +
-        science_theme -> p3
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### Scarring for left side
 ```{r cor-DMSA-left, fig.height = 4, fig.width = 14}
-rva1a3_array$dtDM6B = unclass(rva1a3_array$DM6B_13) - unclass(rva1a3_array$DM6B_01)
+rva1a3_array$dtDM6B = (unclass(rva1a3_array$DM6B_13) - unclass(rva1a3_array$DM6B_01))%>% as.factor
 
 rva1a3_array$DM6B_01_LABEL = recode(rva1a3_array$DM6B_01, 
                              "'A' = 'None'; 
@@ -536,69 +480,20 @@ rva1a3_array$DM6B_13_LABEL = recode(rva1a3_array$DM6B_13,
 rva1a3_array$DM6B_13_LABEL = factor(rva1a3_array$DM6B_13_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
 
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_01_LABEL)) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
+va <- c("DM6B_01_LABEL", "DM6B_13_LABEL", "dtDM6B")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_13_LABEL)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p2
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6B), ], aes(y = DEFA1.A3.CN, x = factor(dtDM6B))) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(breaks = -1:4) +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p3
-
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
-
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_01_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_01_LABEL)) +
-        geom_point(position = "", col = "blue") +
-        stat_sum(aes(size = ..n..), col = "blue") +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$DM6B_13_LABEL), ], aes(y = DEFA1.A3.CN, x = DM6B_13_LABEL)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtDM6B), ], aes(y = DEFA1.A3.CN, x = dtDM6B)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_continuous(breaks = -1:3) +
-        theme_bw() +
-        science_theme -> p3
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
 #### Worst Scarring
 ```{r cor-Worst Scarring, fig.height = 4, fig.width = 14}
-rva1a3_array$dtWORST_SCARRING = unclass(rva1a3_array$WORST_SCARRING1301) - unclass(rva1a3_array$WORST_SCARRING0101)
+rva1a3_array$dtWORST_SCARRING = (unclass(rva1a3_array$WORST_SCARRING1301) - unclass(rva1a3_array$WORST_SCARRING0101))%>% as.factor
 
 rva1a3_array$WORST_SCARRING0101_LABEL = recode(rva1a3_array$WORST_SCARRING0101, 
                              "'A' = 'None'; 
@@ -618,65 +513,15 @@ rva1a3_array$WORST_SCARRING1301_LABEL = recode(rva1a3_array$WORST_SCARRING1301,
                              ")
 rva1a3_array$WORST_SCARRING1301_LABEL = factor(rva1a3_array$WORST_SCARRING1301_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
 
+va <- c("WORST_SCARRING0101_LABEL", "WORST_SCARRING1301_LABEL", "dtWORST_SCARRING")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING0101_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING0101_LABEL)) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING1301_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING1301_LABEL)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING), ], aes(y = DEFA1.A3.CN, x = factor(dtWORST_SCARRING))) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(breaks = -1:4) +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p3
-
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
-
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING0101_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING0101_LABEL)) +
-        geom_point(position = "", col = "blue") +
-        stat_sum(aes(size = ..n..), col = "blue") +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING1301_LABEL), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING1301_LABEL)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete(limits = c("None", "Mild", "Moderate", "Severe", "G. Atrophy")) +
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING), ], aes(y = DEFA1.A3.CN, x = dtWORST_SCARRING)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_continuous(breaks = -1:3) +
-        theme_bw() +
-        science_theme -> p3
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
 #### Side with Worst Scarring
@@ -693,66 +538,15 @@ rva1a3_array$dtWORST_SCARRING_SIDE_LABEL = recode(rva1a3_array$dtWORST_SCARRING_
                               -1 = 'Change'
                              ")
 
+va <- c("WORST_SCARRING_SIDE0101", "WORST_SCARRING_SIDE1301", "dtWORST_SCARRING_SIDE_LABEL")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE0101), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE0101)) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE1301), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE1301)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING_SIDE_LABEL), ], aes(y = DEFA1.A3.CN, x = factor(dtWORST_SCARRING_SIDE_LABEL))) +
-        geom_boxplot() +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP)
-        theme_bw() +
-        science_theme -> p3
-
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
-
-
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE0101), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE0101)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$WORST_SCARRING_SIDE1301), ], aes(y = DEFA1.A3.CN, x = WORST_SCARRING_SIDE1301)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtWORST_SCARRING_SIDE_LABEL), ], aes(y = DEFA1.A3.CN, x = dtWORST_SCARRING_SIDE_LABEL)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p3
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
 
@@ -760,27 +554,14 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```{r cor-New Scar, fig.height = 4, fig.width = 8}
 rva1a3_array$SCAR_NEW04_LABEL = recode(rva1a3_array$SCAR_NEW04, " 0 = 'No'; 1 = 'Yes'")
 
+va <- c("SCAR_NEW04_LABEL")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$SCAR_NEW04_LABEL), ], aes(y = DEFA1.A3.CN, x = SCAR_NEW04_LABEL)) +
-#         geom_point(position = "jitter", fill = "black", col = "blue", size = 2.5) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p1
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$SCAR_NEW04_LABEL), ], aes(y = DEFA1.A3.CN, x = SCAR_NEW04_LABEL)) +
-        geom_point(position = "") +
-        stat_sum(aes(size = ..n..)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p2
-
-plot = list()
-plot = list(p1, p2)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p2
+p = list()
+p = c(p1, p2)
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
 ### Grade and laterality (left/right/both) of vesicoureteral reflux
@@ -794,11 +575,11 @@ rva1a3_array$VR_3L_0101 = as.factor(rva1a3_array$VR_3L_0101)
 rva1a3_array$VR_3L_1301 = as.factor(rva1a3_array$VR_3L_1301)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
@@ -850,11 +631,11 @@ rva1a3_array$HIGHEST_REFLUX0101_LABEL = as.factor(rva1a3_array$HIGHEST_REFLUX010
 rva1a3_array$HIGHEST_REFLUX1301_LABEL = as.factor(rva1a3_array$HIGHEST_REFLUX1301_LABEL)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) & (rva1a3_array[va[i]] != "NA"), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) & (rva1a3_array[va[i]] != "NA"), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
@@ -869,11 +650,11 @@ rva1a3_array$HIGHEST_REFLUX_SIDE0101 = as.factor(rva1a3_array$HIGHEST_REFLUX_SID
 rva1a3_array$HIGHEST_REFLUX_SIDE1301 = as.factor(rva1a3_array$HIGHEST_REFLUX_SIDE1301)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
@@ -942,11 +723,11 @@ rva1a3_array$PORG_SPECIES0101 = as.factor(rva1a3_array$PORG_SPECIES0101)
 rva1a3_array$SORG_SPECIES0101 = as.factor(rva1a3_array$SORG_SPECIES0101)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
@@ -956,9 +737,9 @@ va <- c("USRORG13A01")
 rva1a3_array$USRORG13A01 = as.factor(rva1a3_array$USRORG13A01)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
 
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
