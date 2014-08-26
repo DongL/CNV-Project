@@ -62,7 +62,7 @@ plt_s <- function(df, x, y){
         science_theme
 }
 
-plt <- function(df, x, y){
+plt_oneway <- function(df, x, y){
         p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
 #         print(p)
         if(p > 0.2 | p == "NaN" | !exists("p")) {
@@ -71,6 +71,27 @@ plt <- function(df, x, y){
                 scale_y_continuous(breaks = 3:14) +
                 theme_bw() +
                 science_theme
+        } else
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_boxplot(aes_string(fill = x)) +
+                scale_y_continuous(breaks = 3:14) +
+                theme_bw() +
+                science_theme
+}
+
+plt <- function(df, x, y){
+        df_l = "rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != 'NA'), ]"
+        para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
+        FUN_TABLE <- paste0("table",  para)
+        p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
+        p = p.chisq
+        print(p)
+        if(p > 0.3 | p == "NaN" | !exists("p")) {
+                ggplot(df, aes_string(y = y, x = x)) +
+                        geom_boxplot() +
+                        scale_y_continuous(breaks = 3:14) +
+                        theme_bw() +
+                        science_theme
         } else
                 ggplot(df, aes_string(y = y, x = x)) +
                 geom_boxplot(aes_string(fill = x)) +
@@ -90,15 +111,14 @@ plt_point_s <- function(df, x, y){
 }
 
 plt_point <- function(df, x, y){
-#         x = "dtCHR_CONST_LABEL"
-#         x = "dtHIGHEST_REFLUX"
-#         y = "DEFA1.A3.CN"
-#         df = rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != "NA"), ]
-#                 df[x] = factor(df[,x])
-#         df = rva1a3_array[!is.na(rva1a3_array["dtHIGHEST_REFLUX"]) & (rva1a3_array["dtHIGHEST_REFLUX"] != "NA"), ]
-        oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
-#         print(oneway_p)
-        if(oneway_p > 0.2 | oneway_p == "NaN") {
+#         oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
+        df_l = "rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != 'NA'), ]"
+        para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
+        FUN_TABLE <- paste0("table",  para)
+        p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
+        p = p.chisq
+#         print(p)
+        if(p > 0.3| p == "NaN") {
                 ggplot(df, aes_string(y = y, x = x)) +
                         geom_point(position = "") +
                         stat_sum(aes(size = ..n..)) +
@@ -183,10 +203,6 @@ rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102,
 
 va <- c("RACE0102_LABEL", "SEX0101")
 
-# rva1a3_array$CHR_CONST0102 = as.factor(rva1a3_array$CHR_CONST0102)
-# rva1a3_array$CHR_CONST1302 = as.factor(rva1a3_array$CHR_CONST1302)
-# rva1a3_array$dtCHR_CONST = as.factor(rva1a3_array$dtCHR_CONST)
-
 p = list()
 lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
@@ -195,27 +211,6 @@ p = list()
 lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$RACE0102_LABEL),], aes(x = RACE0102_LABEL, y = DEFA1.A3.CN, fill =RACE0102_LABEL)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter")+
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$SEX0101),], aes(x = SEX0101, y = DEFA1.A3.CN)) +
-        geom_boxplot() +
-#         geom_point(position = "jitter")+
-        scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p2
-
-plot = list()
-plot = list(p1, p2)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
-
-# 
 # par(mfrow = c(1,2))
 # boxplot(DEFA1.A3.CN ~ RACE0102_LABEL, data = rva1a3_array, 
 #         xlab = "Race", ylab = "DEFA1.A3.CN",
@@ -227,10 +222,8 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
 
 ```
 
-> Among all the races recoded, Asian population tends to have highest copy number of DEFA1A3 with median copy number value of DEFA1A3 at 7.
-
 ### Bladder and bowel movement dysfunction
-```{r cor2, fig.height = 4, fig.width = 14}
+```{r cor - BBD, fig.height = 4, fig.width = 14}
 rva1a3_array$dtBBD = rva1a3_array$BBD1302 - rva1a3_array$BBD0102
 rva1a3_array$dtBBD_LABEL = recode(rva1a3_array$dtBBD, 
                              "1 = 'Worse'; 
@@ -261,8 +254,6 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 #         col = rainbow(3), notch = T)
 ```
 
-
-> Higher copy number of DEFA1A3 appears to be associated with better dtBBD score (changing from socre 1 to 0, indicative of BBD getting better) two years after intial recruitment.
 
 ```{r ddBBD by TXGROUP, eval = F}
 ggplot(rva1a3_array, aes(x = dtBBD_EXP, y = DEFA1.A3.CN, fill = dtBBD_EXP)) +
@@ -323,11 +314,11 @@ rva1a3_array$DVQSCORE1304_F = as.factor(rva1a3_array$DVQSCORE1304)
 rva1a3_array$dtDVQSCORE = as.factor(rva1a3_array$dtDVQSCORE)
 
 p = list()
-lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 # par(mfrow = c(1,3))
