@@ -54,8 +54,7 @@ science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"
 #                       legend.position = c(0.85, 0.85),
                       plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
                       text = element_text(size = 14))  
-
-plt <- function(df, x, y){
+plt_s <- function(df, x, y){
         ggplot(df, aes_string(y = y, x = x)) +
         geom_boxplot() +
         scale_y_continuous(breaks = 3:14) +
@@ -63,7 +62,24 @@ plt <- function(df, x, y){
         science_theme
 }
 
-plt_point <- function(df, x, y){
+plt <- function(df, x, y){
+        p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
+#         print(p)
+        if(p > 0.2 | p == "NaN" | !exists("p")) {
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_boxplot() +
+                scale_y_continuous(breaks = 3:14) +
+                theme_bw() +
+                science_theme
+        } else
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_boxplot(aes_string(fill = x)) +
+                scale_y_continuous(breaks = 3:14) +
+                theme_bw() +
+                science_theme
+}
+
+plt_point_s <- function(df, x, y){
         ggplot(df, aes_string(y = y, x = x)) +
         geom_point(position = "") +
         stat_sum(aes(size = ..n..)) +
@@ -72,6 +88,34 @@ plt_point <- function(df, x, y){
         theme_bw() +
         science_theme
 }
+
+plt_point <- function(df, x, y){
+#         x = "dtCHR_CONST_LABEL"
+#         x = "dtHIGHEST_REFLUX"
+#         y = "DEFA1.A3.CN"
+#         df = rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != "NA"), ]
+#                 df[x] = factor(df[,x])
+#         df = rva1a3_array[!is.na(rva1a3_array["dtHIGHEST_REFLUX"]) & (rva1a3_array["dtHIGHEST_REFLUX"] != "NA"), ]
+        oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
+#         print(oneway_p)
+        if(oneway_p > 0.2 | oneway_p == "NaN") {
+                ggplot(df, aes_string(y = y, x = x)) +
+                        geom_point(position = "") +
+                        stat_sum(aes(size = ..n..)) +
+                        scale_y_continuous(breaks = 3:14) +
+                        scale_x_discrete() +
+                        theme_bw() +
+                        science_theme
+        }else
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_point(position = "", col = "blue") +
+                stat_sum(aes(size = ..n..), col = "blue") +
+                scale_y_continuous(breaks = 3:14) +
+                scale_x_discrete() +
+                theme_bw() +
+                science_theme
+}
+
 ```
 
 ```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
@@ -81,7 +125,7 @@ plt_point <- function(df, x, y){
 rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 names(rva1a3_array) = toupper(names(rva1a3_array))
 
-rva1a3_array = filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
+# rva1a3_array = filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
 
 # str(rva1a3)
 # dim(rva1a3)
@@ -174,19 +218,33 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
 ### Bladder and bowel movement dysfunction
 ```{r cor2, fig.height = 4, fig.width = 10}
 rva1a3_array$dtBBD = rva1a3_array$BBD1302 - rva1a3_array$BBD0102
-rva1a3_array$dtBBD_EXP = recode(rva1a3_array$dtBBD, 
+rva1a3_array$dtBBD_LABEL = recode(rva1a3_array$dtBBD, 
                              "1 = 'Worse'; 
                               0 = 'No Change';
                              -1 = 'Better'")
 
-par(mfrow = c(1,3))
-boxplot(DEFA1.A3.CN ~ BBD0102, data = rva1a3_array, 
-        xlab = "BBD0102", ylab = "DEFA1.A3.CN")
-boxplot(DEFA1.A3.CN ~ BBD1302, data = rva1a3_array, 
-        xlab = "BBD1302", ylab = "DEFA1.A3.CN")
-boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
-        xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
-        col = rainbow(3), notch = T)
+va <- c("BBD0102", "BBD1302", "dtBBD_LABEL")
+
+rva1a3_array$BBD0102 = as.factor(rva1a3_array$BBD0102)
+rva1a3_array$BBD1302 = as.factor(rva1a3_array$BBD1302)
+rva1a3_array$dtBBD_LABEL = as.factor(rva1a3_array$dtBBD_LABEL)
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+# 
+# par(mfrow = c(1,3))
+# boxplot(DEFA1.A3.CN ~ BBD0102, data = rva1a3_array, 
+#         xlab = "BBD0102", ylab = "DEFA1.A3.CN")
+# boxplot(DEFA1.A3.CN ~ BBD1302, data = rva1a3_array, 
+#         xlab = "BBD1302", ylab = "DEFA1.A3.CN")
+# boxplot(DEFA1.A3.CN ~ dtBBD_EXP, data = rva1a3_array, 
+#         xlab = "dtBBD_EXP", ylab = "DEFA1.A3.CN",
+#         col = rainbow(3), notch = T)
 ```
 
 
@@ -239,7 +297,24 @@ rva1a3_array %>%
 
 ### DVQ SCORE
 ```{r cor-DVQSCORE, fig.height = 4, fig.width = 12}
-rva1a3_array$dtDVQSCORE = rva1a3_array$DVQSCORE1304 - rva1a3_array$DVQSCORE0104
+rva1a3_array$DVQSCORE1304_CUT = cut(as.numeric(rva1a3_array$DVQSCORE1304), breaks = 2)
+rva1a3_array$DVQSCORE0104_CUT = cut(as.numeric(rva1a3_array$DVQSCORE0104), breaks = 3)
+rva1a3_array$dtDVQSCORE = unclass(rva1a3_array$DVQSCORE1304) - unclass(rva1a3_array$DVQSCORE0104)
+
+# va <- c("CHR_CONST0102", "CHR_CONST1302", "dtCHR_CONST_LABEL")
+va <- c("DVQSCORE0104_F", "DVQSCORE1304_F", "dtDVQSCORE" )
+# , "dtDVQSCORE"
+rva1a3_array$DVQSCORE0104_F = as.factor(rva1a3_array$DVQSCORE0104)
+rva1a3_array$DVQSCORE1304_F = as.factor(rva1a3_array$DVQSCORE1304)
+rva1a3_array$dtDVQSCORE = as.factor(rva1a3_array$dtDVQSCORE)
+
+p = list()
+lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 # par(mfrow = c(1,3))
 # plot(DVQSCORE0104 ~ DEFA1.A3.CN, data = rva1a3_array, 
@@ -251,45 +326,46 @@ rva1a3_array$dtDVQSCORE = rva1a3_array$DVQSCORE1304 - rva1a3_array$DVQSCORE0104
 
 # lm(DVQSCORE1304 ~ DEFA1.A3.CN, data = rva1a3_array)%>%summary
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE0104)) + 
-#         geom_boxplot() +
-        geom_point(position = "")+
-        geom_smooth(method = "lm") +
-        stat_sum(aes(size = ..n..)) +
-
-#         xlim = c(3, 14) +
-#         scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p1
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE1304)) +
-#         geom_boxplot() +
-        geom_point(position = "", fill = "black", col = "blue")+
-        geom_smooth(method = "lm") +
-        stat_sum(aes(size = ..n..), col = "blue") +
-
-#         xlim = c(3, 14) +
-#         scale_x_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p2
-
-ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = dtDVQSCORE)) +
-#         geom_boxplot() +
-        geom_point(position = "", fill = "black", col = "blue")+
-        geom_smooth(method = "lm") +
-        stat_sum(aes(size = ..n..), col = "blue") +
-
-#         xlim = c(3, 14) +
-#         scale_y_discrete() +
-#         facet_grid(.~TXGROUP) +
-        theme_bw() +
-        science_theme -> p3
-
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+# ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = DVQSCORE0104)) + 
+# #         geom_boxplot() +
+#         geom_point(position = "")+
+#         geom_smooth(method = "lm") +
+#         stat_sum(aes(size = ..n..)) +
+# 
+# #         xlim = c(3, 14) +
+# #         scale_x_discrete() +
+# #         facet_grid(.~TXGROUP) +
+#         theme_bw() +
+#         science_theme -> p1
+# 
+# ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(y = DEFA1.A3.CN, x = DVQSCORE1304)) +
+# #         geom_boxplot() +
+#                 geom_point(position = "", col = "blue") +
+#                 stat_sum(aes(size = ..n..), col = "blue") +
+#                 scale_y_continuous(breaks = 3:14) +
+#                 scale_x_discrete() +
+# 
+# #         xlim = c(3, 14) +
+# #         scale_x_discrete() +
+# #         facet_grid(.~TXGROUP) +
+#                 theme_bw() +
+#                 science_theme -> p2
+# 
+# ggplot(rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN), ], aes(x = factor(DEFA1.A3.CN), y = dtDVQSCORE)) +
+# #         geom_boxplot() +
+#         geom_point(position = "", fill = "black", col = "blue")+
+#         geom_smooth(method = "lm") +
+#         stat_sum(aes(size = ..n..), col = "blue") +
+# 
+# #         xlim = c(3, 14) +
+# #         scale_y_discrete() +
+# #         facet_grid(.~TXGROUP) +
+#         theme_bw() +
+#         science_theme -> p3
+# 
+# plot = list()
+# plot = list(p1, p2, p3)
+# do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 
 ```
 
@@ -314,31 +390,19 @@ rva1a3_array$dtCHR_CONST_LABEL = recode(rva1a3_array$dtCHR_CONST,
 #         xlab = "dtCHR_CONST_LABEL", ylab = "DEFA1.A3.CN",
 #         col = rainbow(3), notch = T)
 
+va <- c("CHR_CONST0102", "CHR_CONST1302", "dtCHR_CONST_LABEL")
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$CHR_CONST0102), ], aes(y = DEFA1.A3.CN, x = CHR_CONST0102)) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p1
+rva1a3_array$CHR_CONST0102 = as.factor(rva1a3_array$CHR_CONST0102)
+rva1a3_array$CHR_CONST1302 = as.factor(rva1a3_array$CHR_CONST1302)
+rva1a3_array$dtCHR_CONST = as.factor(rva1a3_array$dtCHR_CONST)
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$CHR_CONST1302), ], aes(y = DEFA1.A3.CN, x = CHR_CONST1302)) +
-        geom_boxplot() +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p2
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
-ggplot(rva1a3_array[!is.na(rva1a3_array$dtCHR_CONST_LABEL), ], aes(y = DEFA1.A3.CN, x = dtCHR_CONST_LABEL)) +
-        geom_boxplot(aes(fill = dtCHR_CONST_LABEL)) +
-        scale_y_continuous(breaks = 3:14) +
-        scale_x_discrete() +
-        theme_bw() +
-        science_theme -> p3
-
-plot = list()
-plot = list(p1, p2, p3)
-do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
 
@@ -436,7 +500,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### Scarring for left side
-```{r r cor-DMSA-left, fig.height = 4, fig.width = 14}
+```{r cor-DMSA-left, fig.height = 4, fig.width = 14}
 rva1a3_array$dtDM6B = unclass(rva1a3_array$DM6B_13) - unclass(rva1a3_array$DM6B_01)
 
 rva1a3_array$DM6B_01_LABEL = recode(rva1a3_array$DM6B_01, 
@@ -519,7 +583,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =3)))
 ```
 
 #### Worst Scarring
-```{r r cor-Worst Scarring, fig.height = 4, fig.width = 14}
+```{r cor-Worst Scarring, fig.height = 4, fig.width = 14}
 rva1a3_array$dtWORST_SCARRING = unclass(rva1a3_array$WORST_SCARRING1301) - unclass(rva1a3_array$WORST_SCARRING0101)
 
 rva1a3_array$WORST_SCARRING0101_LABEL = recode(rva1a3_array$WORST_SCARRING0101, 
@@ -716,11 +780,11 @@ rva1a3_array$VR_3L_0101 = as.factor(rva1a3_array$VR_3L_0101)
 rva1a3_array$VR_3L_1301 = as.factor(rva1a3_array$VR_3L_1301)
 
 p = list()
-lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 ```
@@ -746,25 +810,43 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
 #### Highest Grade of reflux between both ureters
-```{r cor-HIGHEST_REFLUX, fig.height = 4, fig.width = 14}
+```{r cor-HIGHEST_REFLUX, fig.height = 4, fig.width = 14, eval = T}
 rva1a3_array$dtHIGHEST_REFLUX = as.factor(unclass(rva1a3_array$HIGHEST_REFLUX1301) - unclass(rva1a3_array$HIGHEST_REFLUX0101))
 
-va <- c("HIGHEST_REFLUX0101", "HIGHEST_REFLUX1301", "dtHIGHEST_REFLUX")
+rva1a3_array$HIGHEST_REFLUX0101_LABEL = recode(rva1a3_array$HIGHEST_REFLUX0101, 
+                             " 0 = 'None'; 
+                               1 = 'I';
+                               2 = 'II';
+                               3 = 'III';
+                               4 = 'IV';
+                               5 = 'V'
+                             ")
+rva1a3_array$HIGHEST_REFLUX1301_LABEL = recode(rva1a3_array$HIGHEST_REFLUX1301, 
+                             " 0 = 'None'; 
+                               1 = 'I';
+                               2 = 'II';
+                               3 = 'III';
+                               4 = 'IV';
+                               5 = 'V'
+                             ")
 
-rva1a3_array$HIGHEST_REFLUX0101 = as.factor(rva1a3_array$HIGHEST_REFLUX0101)
-rva1a3_array$HIGHEST_REFLUX1301 = as.factor(rva1a3_array$HIGHEST_REFLUX1301)
+va <- c("HIGHEST_REFLUX0101_LABEL", "HIGHEST_REFLUX1301_LABEL", "dtHIGHEST_REFLUX")
+
+rva1a3_array$HIGHEST_REFLUX0101_LABEL = as.factor(rva1a3_array$HIGHEST_REFLUX0101_LABEL)
+rva1a3_array$HIGHEST_REFLUX1301_LABEL = as.factor(rva1a3_array$HIGHEST_REFLUX1301_LABEL)
 
 p = list()
-lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) & (rva1a3_array[va[i]] != "NA"), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
 ```
 
 #### Side with highest grade of reflux between both ureters
-```{r cor-HIGHEST_REFLUX_SIDE, fig.height = 4, fig.width = 14}
+```{r cor-HIGHEST_REFLUX_SIDE, fig.height = 4, fig.width = 14, eval = T}
 rva1a3_array$dtHIGHEST_REFLUX_SIDE = as.factor(unclass(rva1a3_array$HIGHEST_REFLUX_SIDE1301) - unclass(rva1a3_array$HIGHEST_REFLUX_SIDE0101))
 
 va <- c("HIGHEST_REFLUX_SIDE0101", "HIGHEST_REFLUX_SIDE1301", "dtHIGHEST_REFLUX_SIDE")
@@ -773,11 +855,11 @@ rva1a3_array$HIGHEST_REFLUX_SIDE0101 = as.factor(rva1a3_array$HIGHEST_REFLUX_SID
 rva1a3_array$HIGHEST_REFLUX_SIDE1301 = as.factor(rva1a3_array$HIGHEST_REFLUX_SIDE1301)
 
 p = list()
-lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 ```
 
@@ -840,17 +922,17 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
 #### Primary and secondary species for the index UTI
-```{r cor-SPECIES0101, fig.height = 4, fig.width = 12}
+```{r cor-SPECIES0101, fig.height = 4, fig.width = 12, eval = T}
 va <- c("PORG_SPECIES0101", "SORG_SPECIES0101")
 rva1a3_array$PORG_SPECIES0101 = as.factor(rva1a3_array$PORG_SPECIES0101)
 rva1a3_array$SORG_SPECIES0101 = as.factor(rva1a3_array$SORG_SPECIES0101)
 
 p = list()
-lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
 p = list()
-lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
+lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
@@ -860,9 +942,9 @@ va <- c("USRORG13A01")
 rva1a3_array$USRORG13A01 = as.factor(rva1a3_array$USRORG13A01)
 
 p = list()
-lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
+lapply(seq_along(va), function(i) plt_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
 
-lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
+lapply(seq_along(va), function(i) plt_point_s(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 ```
 
