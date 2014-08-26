@@ -143,7 +143,7 @@ names(rva1a3_array) = toupper(names(rva1a3_array))
 ```
 
 ## Data summary
-```{r summary - table}
+```{r summary - table, eval = F}
 # rva1a3_array %>% group_by(ETHNIC0101, SEX0101) %>%
 #         summarize(mean(DEFA1.A3.CN), n()) -> t1
 # 
@@ -161,15 +161,15 @@ rva1a3_array %>% group_by(RACE0102) %>%
 
 ```{r summary - plot}
 par(mfrow = c(2,2))
-hist(rva1a3_array$AGE0101, xlab = "Age")
-hist(rva1a3_array$RACE0102, breaks = 20, xlab = "Race")
-plot(factor(rva1a3_array$SEX0101), xlab = "Sex")
-hist(rva1a3_array$DEFA1.A3.CN, xlab = "DEFA1A3.CN")
+hist(rva1a3_array$AGE0101, xlab = "Age",breaks = 20, main = "")
+hist(rva1a3_array$RACE0102, breaks = 7, xlab = "Race", main = "")
+plot(factor(rva1a3_array$SEX0101), xlab = "Sex", main = "")
+hist(rva1a3_array$DEFA1.A3.CN, xlab = "DEFA1A3.CN", breaks = 12, main = "")
 ```
 
 ## Correlation
-### Race & Age 
-```{r cor, fig.height = 5, fig.width = 16}
+### Race & Gender 
+```{r cor - Race & Gender, fig.height = 4, fig.width = 14}
 rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102, 
                              "1 = 'White'; 
                               2 = 'Black';
@@ -180,6 +180,20 @@ rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102,
                               7 = 'Mixed';
                               8 = 'Missing'
                              ")
+
+va <- c("RACE0102_LABEL", "SEX0101")
+
+# rva1a3_array$CHR_CONST0102 = as.factor(rva1a3_array$CHR_CONST0102)
+# rva1a3_array$CHR_CONST1302 = as.factor(rva1a3_array$CHR_CONST1302)
+# rva1a3_array$dtCHR_CONST = as.factor(rva1a3_array$dtCHR_CONST)
+
+p = list()
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 
 ggplot(rva1a3_array[!is.na(rva1a3_array$RACE0102_LABEL),], aes(x = RACE0102_LABEL, y = DEFA1.A3.CN, fill =RACE0102_LABEL)) +
         geom_boxplot() +
@@ -216,7 +230,7 @@ do.call(grid.arrange, c(plot, list(nrow = 1, ncol =2)))
 > Among all the races recoded, Asian population tends to have highest copy number of DEFA1A3 with median copy number value of DEFA1A3 at 7.
 
 ### Bladder and bowel movement dysfunction
-```{r cor2, fig.height = 4, fig.width = 10}
+```{r cor2, fig.height = 4, fig.width = 14}
 rva1a3_array$dtBBD = rva1a3_array$BBD1302 - rva1a3_array$BBD0102
 rva1a3_array$dtBBD_LABEL = recode(rva1a3_array$dtBBD, 
                              "1 = 'Worse'; 
