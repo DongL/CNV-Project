@@ -2,11 +2,10 @@
 output:
   html_document:
     theme: cerulean
-  title: RIVUR - DEFA1A3 
   pdf_document: default
 ---
 
-RIVUR - DEFA1A3 
+RIVUR - DEFA1A3 (SUBSET = ASIAN) 
 ===========
 ```{r output, eval = F, echo = F}
 output:
@@ -87,7 +86,7 @@ plt <- function(df, x, y){
         p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
         p = p.chisq
         print(p)
-        if(p > 0.3 | p == "NaN" | !exists("p")) {
+        if(p > 0.2 | p == "NaN" | !exists("p")) {
                 ggplot(df, aes_string(y = y, x = x)) +
                         geom_boxplot() +
                         scale_y_continuous(breaks = 3:14) +
@@ -119,7 +118,7 @@ plt_point <- function(df, x, y){
         p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
         p = p.chisq
 #         print(p)
-        if(p > 0.3| p == "NaN") {
+        if(p > 0.2| p == "NaN") {
                 ggplot(df, aes_string(y = y, x = x)) +
                         geom_point(position = "") +
                         stat_sum(aes(size = ..n..)) +
@@ -141,8 +140,6 @@ plt_point <- function(df, x, y){
 
 ```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
 
-# rva1a3 <- read.xlsx2("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3.xls", sheetIndex = 1, header = T, stringsAsFactors = F) %>% tbl_df
-
 rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 names(rva1a3_array) = toupper(names(rva1a3_array))
 rva1a3_array$TXGROUP_LABEL = recode(rva1a3_array$TXGROUP, 
@@ -153,8 +150,18 @@ rva1a3_array$TF02_LABEL = recode(rva1a3_array$TF02,
                              "1 = 'Treatment Failure'; 
                               0 = 'No Treatment Failure'
                              ")
+rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102, 
+                             "1 = 'White'; 
+                              2 = 'Black';
+                              3 = 'Asian';
+                              4 = 'Hawaiian/Pacific Islander ';
+                              5 = 'American Indian/Alaskan';
+                              6 = 'Other';
+                              7 = 'Mixed';
+                              8 = 'Missing'
+                             ")
 
-# rva1a3_array = filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
+# rva1a3_array = filter(rva1a3_array, RACE0102_LABEL == 'Asian')
 
 # str(rva1a3)
 # dim(rva1a3)
@@ -191,7 +198,7 @@ rva1a3_array %>% group_by(RACE0102) %>%
 ```{r summary - plot, fig.height = 7, fig.width = 10}
 par(mfrow = c(2,3))
 hist(rva1a3_array$AGE0101, xlab = "Age",breaks = 20, main = "")
-hist(rva1a3_array$RACE0102, breaks = 7, xlab = "Race", main = "")
+plot(as.factor(rva1a3_array$RACE0102_LABEL), breaks = 7, xlab = "Race", main = "")
 plot(factor(rva1a3_array$SEX0101), xlab = "Sex", main = "")
 hist(rva1a3_array$DEFA1.A3.CN, xlab = "DEFA1A3.CN", breaks = 12, main = "")
 plot(rva1a3_array$TXGROUP_LABEL, xlab = "Treatment group assignment")
@@ -764,7 +771,7 @@ rva1a3_array$URINE_RES07_LABEL = recode(rva1a3_array$URINE_RES07,
                              ")
 va <- c("URINE_RES07_LABEL")
 p = list()
-lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
+lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) & rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[1]
 
 lapply(seq_along(va), function(i) plt_point(df = rva1a3_array[!is.na(rva1a3_array[va[i]]) &rva1a3_array[va[i]] != "NA", ], x = va[i], y = "DEFA1.A3.CN")) -> p[2]
 do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
