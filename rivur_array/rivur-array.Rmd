@@ -2,6 +2,7 @@
 output:
   html_document:
     theme: cerulean
+  title: RIVUR - DEFA1A3 
   pdf_document: default
 ---
 
@@ -144,6 +145,14 @@ plt_point <- function(df, x, y){
 
 rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 names(rva1a3_array) = toupper(names(rva1a3_array))
+rva1a3_array$TXGROUP_LABEL = recode(rva1a3_array$TXGROUP, 
+                             "'A' = 'TMP/SMZ'; 
+                              'P' = 'Placebo'
+                             ")
+rva1a3_array$TF02_LABEL = recode(rva1a3_array$TF02, 
+                             "1 = 'Treatment Failure'; 
+                              0 = 'No Treatment Failure'
+                             ")
 
 # rva1a3_array = filter(rva1a3_array, RACE0102 == 1, SEX0101 == "F")
 
@@ -179,12 +188,14 @@ rva1a3_array %>% group_by(RACE0102) %>%
 
 ```
 
-```{r summary - plot}
-par(mfrow = c(2,2))
+```{r summary - plot, fig.height = 7, fig.width = 10}
+par(mfrow = c(2,3))
 hist(rva1a3_array$AGE0101, xlab = "Age",breaks = 20, main = "")
 hist(rva1a3_array$RACE0102, breaks = 7, xlab = "Race", main = "")
 plot(factor(rva1a3_array$SEX0101), xlab = "Sex", main = "")
 hist(rva1a3_array$DEFA1.A3.CN, xlab = "DEFA1A3.CN", breaks = 12, main = "")
+plot(rva1a3_array$TXGROUP_LABEL, xlab = "Treatment group assignment")
+plot(as.factor(rva1a3_array$TF02_LABEL), xlab = "Treatment failure")
 ```
 
 ## Correlation
@@ -271,8 +282,9 @@ ggplot(rva1a3_array, aes(x = dtBBD_EXP, y = DEFA1.A3.CN, fill = dtBBD_EXP)) +
 
 ```
 
+
+```{r cor-TF02, fig.height = 4, fig.width = 12, eval = F}
 ### TF02
-```{r cor-TF02, fig.height = 4, fig.width = 12}
 rva1a3_array$TF02_LABLE = recode(rva1a3_array$TF02, 
                              "1 = 'Treatment Failure'; 
                               0 = 'No Treatment Failure'
