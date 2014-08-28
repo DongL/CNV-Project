@@ -136,3 +136,95 @@ checkLoc <- function(RUID){
 # table(data_batch$Copy.Nbs.round)
 # plot(table(data_batch$Copy.Nbs.round))
 ### example #######################################
+
+makeForestPlotForRCTs <- function(mylist, referencerow=2){
+        require("rmeta")
+        numstrata <- length(mylist)
+        # make an array "ntrt" of the number of people in the exposed group, in each stratum
+        # make an array "nctrl" of the number of people in the unexposed group, in each stratum
+        # make an array "ptrt" of the number of people in the exposed group that have the disease,
+        # in each stratum
+        # make an array "pctrl" of the number of people in the unexposed group that have the disease,
+        # in each stratum
+        ntrt <- vector()
+        nctrl <- vector()
+        ptrt <- vector()
+        pctrl <- vector()
+        if (referencerow == 1) { nonreferencerow <- 2 }
+        else                   { nonreferencerow <- 1 }
+        for (i in 1:numstrata)
+        {
+                mymatrix <- mylist[[i]]
+                DiseaseUnexposed <- mymatrix[referencerow,1]
+                ControlUnexposed <- mymatrix[referencerow,2]
+                totUnexposed <- DiseaseUnexposed + ControlUnexposed
+                nctrl[i] <- totUnexposed
+                pctrl[i] <- DiseaseUnexposed
+                DiseaseExposed <- mymatrix[nonreferencerow,1]
+                ControlExposed <- mymatrix[nonreferencerow,2]
+                totExposed <- DiseaseExposed + ControlExposed
+                ntrt[i] <- totExposed
+                ptrt[i] <- DiseaseExposed
+        }
+        names <- as.character(seq(1,numstrata))
+        myMH <- meta.MH(ntrt, nctrl, ptrt, pctrl, conf.level=0.95, names=names)
+        print(myMH)
+        tabletext<-cbind(c("","Study",myMH$names,NA,"Summary"),
+                         c("Disease","(exposed)",ptrt,NA,NA),
+                         c("Disease","(unexposed)",pctrl, NA,NA),
+                         c("","OR",format(exp(myMH$logOR),digits=2),NA,format(exp(myMH$logMH),digits=2)))
+        print(tabletext)
+        m<- c(NA,NA,myMH$logOR,NA,myMH$logMH)
+        l<- m-c(NA,NA,myMH$selogOR,NA,myMH$selogMH)*2
+        u<- m+c(NA,NA,myMH$selogOR,NA,myMH$selogMH)*2
+        forestplot(tabletext,m,l,u,zero=0,is.summary=c(TRUE,TRUE,rep(FALSE,8),TRUE),
+                   clip=c(log(0.1),log(2.5)), xlog=TRUE,
+                   col=meta.colors(box="royalblue",line="darkblue", summary="royalblue"))
+
+#  example
+# mymatrix1 <- matrix(c(198,728,128,576),nrow=2,byrow=TRUE)
+# mymatrix2 <- matrix(c(96,437,101,342),nrow=2,byrow=TRUE)
+# mymatrix3 <- matrix(c(1105,4243,1645,6703),nrow=2,byrow=TRUE)
+# mymatrix4 <- matrix(c(741,2905,594,2418),nrow=2,byrow=TRUE)
+# mymatrix5 <- matrix(c(264,1091,907,3671),nrow=2,byrow=TRUE)
+# mymatrix6 <- matrix(c(105,408,348,1248),nrow=2,byrow=TRUE)
+# mymatrix7 <- matrix(c(138,431,436,1576),nrow=2,byrow=TRUE)
+# mylist <- list(mymatrix1,mymatrix2,mymatrix3,mymatrix4,mymatrix5,mymatrix6,mymatrix7)
+# 
+# makeForestPlotForRCTs(mylist)
+}
+
+
+
+
+#  forestplot ####################
+forestplot <- function(d, xlab="Odds Ratio", ylab="Study"){
+        require(ggplot2)
+        p <- ggplot(d, aes(x=x, y=y, ymin=ylo, ymax=yhi)) + 
+                geom_pointrange() + 
+                coord_flip() +
+                geom_hline(aes(x=0), lty=2) +
+                ylab(xlab) +
+                xlab(ylab) +#switch because of the coord_flip() above
+                theme_science
+        return(p)
+}
+
+# d is a data frame with 4 columns
+# d$x gives variable names
+# d$y gives center point
+# d$ylo gives lower limits
+# d$yhi gives upper limits
+
+
+# Create some dummy data.
+d <- data.frame(x = toupper(letters[1:10]),
+                y = rnorm(10, .05, 0.1))
+d <- transform(d, ylo = y-1/10, yhi=y+1/10)
+
+forestplot(d)
+
+
+
+
+
