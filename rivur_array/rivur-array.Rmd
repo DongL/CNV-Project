@@ -22,7 +22,8 @@ output:
 #     theme.chooser: T
 #     highlight.chooser: FALSE
 #     menu: F
-#     title: "IGLL5 report"
+#     title: "IGLL5 repor
+library(agricolae)
 library(xlsx)
 library(car)
 library(knitr)
@@ -82,12 +83,24 @@ plt_oneway <- function(df, x, y){
 
 plt <- function(df, x, y){
         df_l = "rva1a3_array[!is.na(rva1a3_array[x]) & (rva1a3_array[x] != 'NA'), ]"
+        
+        pa <- paste0("(",df_l,"$",y,", ", df_l,"$",x)
+        FUN_kruskal = paste0("kruskal", pa, ", group = F, console = F)")
+        result_kruskal = eval(parse(text = FUN_kruskal))$comparison
+        
+        cat("\n",x)
+        if (dim(result_kruskal[result_kruskal$pvalue < 0.05,])[1] != 0){
+                kable(result_kruskal[result_kruskal$pvalue < 0.05,])
+        }
+        cat("\n")
+        
         para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
         FUN_TABLE <- paste0("table",  para)
         p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
         p.kruskal = kruskal.test(as.formula(paste0(y, "~", x)), data = df)$p.value
         p = p.kruskal
         print(p)
+        
         if(p > 0.2 | p == "NaN" | !exists("p")) {
                 ggplot(df, aes_string(y = y, x = x)) +
                         geom_boxplot() +
@@ -100,6 +113,8 @@ plt <- function(df, x, y){
                 scale_y_continuous(breaks = 3:14) +
                 theme_bw() +
                 science_theme
+        
+        
 }
 
 plt_point_s <- function(df, x, y){
