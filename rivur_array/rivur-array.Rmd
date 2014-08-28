@@ -5,7 +5,7 @@ output:
   pdf_document: default
 ---
 
-RIVUR - DEFA1A3 (SUBSET = ASIAN) 
+RIVUR - DEFA1A3 
 ===========
 ```{r output, eval = F, echo = F}
 output:
@@ -54,6 +54,7 @@ science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"
 #                       legend.position = c(0.85, 0.85),
                       plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
                       text = element_text(size = 14))  
+
 plt_s <- function(df, x, y){
         ggplot(df, aes_string(y = y, x = x)) +
         geom_boxplot() +
@@ -84,7 +85,8 @@ plt <- function(df, x, y){
         para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
         FUN_TABLE <- paste0("table",  para)
         p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
-        p = p.chisq
+        p.kruskal = kruskal.test(as.formula(paste0(y, "~", x)), data = df)$p.value
+        p = p.kruskal
         print(p)
         if(p > 0.2 | p == "NaN" | !exists("p")) {
                 ggplot(df, aes_string(y = y, x = x)) +
@@ -116,7 +118,8 @@ plt_point <- function(df, x, y){
         para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
         FUN_TABLE <- paste0("table",  para)
         p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
-        p = p.chisq
+        p.kruskal = kruskal.test(as.formula(paste0(y, "~", x)), data = df)$p.value
+        p = p.kruskal
 #         print(p)
         if(p > 0.2| p == "NaN") {
                 ggplot(df, aes_string(y = y, x = x)) +
@@ -218,7 +221,7 @@ rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102,
                               7 = 'Mixed';
                               8 = 'Missing'
                              ")
-
+rva1a3_array$RACE0102_LABEL = as.factor(rva1a3_array$RACE0102_LABEL)
 va <- c("RACE0102_LABEL", "SEX0101")
 
 p = list()
@@ -418,7 +421,7 @@ va <- c("CHR_CONST0102", "CHR_CONST1302", "dtCHR_CONST_LABEL")
 
 rva1a3_array$CHR_CONST0102 = as.factor(rva1a3_array$CHR_CONST0102)
 rva1a3_array$CHR_CONST1302 = as.factor(rva1a3_array$CHR_CONST1302)
-rva1a3_array$dtCHR_CONST = as.factor(rva1a3_array$dtCHR_CONST)
+rva1a3_array$dtCHR_CONST_LABEL = as.factor(rva1a3_array$dtCHR_CONST_LABEL)
 
 p = list()
 lapply(seq_along(va), function(i) plt(df = rva1a3_array[!is.na(rva1a3_array[va[i]]), ], x = va[i], y = "DEFA1.A3.CN")) -> p
@@ -555,7 +558,10 @@ rva1a3_array$dtWORST_SCARRING_SIDE_LABEL = recode(rva1a3_array$dtWORST_SCARRING_
                                1 = 'Change';
                                2 = 'Change';
                               -1 = 'Change'
-                             ")
+                             ") %>% as.factor()
+
+rva1a3_array$WORST_SCARRING_SIDE0101 = as.factor(rva1a3_array$WORST_SCARRING_SIDE0101)
+rva1a3_array$WORST_SCARRING_SIDE1301 = as.factor(rva1a3_array$WORST_SCARRING_SIDE1301)
 
 va <- c("WORST_SCARRING_SIDE0101", "WORST_SCARRING_SIDE1301", "dtWORST_SCARRING_SIDE_LABEL")
 
@@ -571,7 +577,7 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 
 #### New Scar
 ```{r cor-New Scar, fig.height = 4, fig.width = 8}
-rva1a3_array$SCAR_NEW04_LABEL = recode(rva1a3_array$SCAR_NEW04, " 0 = 'No'; 1 = 'Yes'")
+rva1a3_array$SCAR_NEW04_LABEL = recode(rva1a3_array$SCAR_NEW04, " 0 = 'No'; 1 = 'Yes'") %>% as.factor()
 
 va <- c("SCAR_NEW04_LABEL")
 
