@@ -1,0 +1,161 @@
+---
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+  word_document: default
+---
+IGLL5: Grand table   
+====
+
+```{r setting, message = FALSE, echo=FALSE}
+# output:
+#   knitrBootstrap::bootstrap_document:
+#     theme.chooser: T
+#     highlight.chooser: FALSE
+#     menu: F
+#     title: "IGLL5 report"
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(magrittr)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 5, fig.width = 7)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
+opts_chunk$set(bootstrap.thumbnail.size='col-md-7', 
+               bootstrap.thumbnail = T,
+               bootstrap.panel = T)
+
+
+source("/Users/DL/Documents/R project/Memphis - Copy Number Variation/Functions/myFunction.R")
+
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "none", 
+#                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))   
+```
+
+```{r data_load_preprocessing, cache=FALSE, message = FALSE, echo=F, results='asis'}
+file_list <- list()
+fileloc = "/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/"
+fi <- list.files(fileloc)[1]
+for (file in fi){
+        file_list[[length(file_list)+1]] <- read.table(paste0(fileloc, file),skip = 1, sep = ",", header = T)
+} 
+
+for(i in 1:length(fi)){
+        file_list[[i]]$plate_ID = strsplit(fi[i], split = "-")[[1]][3]
+        attr(file_list[[i]], "plate_ID") = strsplit(fi[i], split = "-")[[1]][3]
+}
+
+# raw data
+data_raw = do.call(rbind, file_list) %>% tbl_df
+
+keyMap_std <- data.frame(pos = c("B13", "B14", "B15",
+                                 "C13", "C14", "C15",
+                                 "F13", "F14", "F15",
+                                 "H13", "H14", "H15",
+                                 "J13", "J14", "J15",
+                                 "L13", "L14", "L15",
+                                 "N13", "N14", "N15"),
+                         sample = c(rep("K106957-", 3), 
+                                    rep("K44781-", 3),
+                                    rep("K96097-", 3),
+                                    rep("K94705-", 3),
+                                    rep("K84083-", 3),
+                                    rep("K75881-", 3),
+                                    rep("K94705B-", 3)),
+                         copy_Nbs = rep(c(NA, 1, NA, 2, NA, NA, NA), times = 3))
+
+attr(keyMap_std,which = "Note") = "7 standards added!"
+
+lapply(file_list, function(data){f(data, keyMap_std = keyMap_std)$data_su})
+lapply(file_list, function(data){f(data, keyMap_std = "default")$data_su})
+
+data_batch <- lapply(file_list, function(data){f(data)$data_su})
+data_batch <- lapply(file_list, function(data){f(data, keyMap_std = keyMap_std)$data_su})
+
+lapply(file_list, f, keyMap_std = "not default")
+
+
+std_batch <- lapply(file_list, function(x) f(x)$std_su)
+sampleLoc_bactch <- lapply(file_list, function(x) f(x)$sampleLoc)
+data_all <- do.call(rbind, data_batch)
+std_all <- do.call(rbind, std_batch)
+sampleLoc_all <- do.call(rbind, sampleLoc_bactch)
+# table(data_batch$Copy.Nbs.round)
+# plot(table(data_batch$Copy.Nbs.round))
+
+```
+
+```{r data summary}
+kable(select(data_all, -diff), digits = 2, align = "c" )
+
+file <- paste(c("IGLL5-grand_table", ".csv"), collapse = "")
+write.csv(file = file, data_all)
+# ggplot(std_merge, aes(x = sample, y = RelQ.sem)) %>%
+#         geom_point()
+```
+
+```{r std, eval=F}
+kable(std_all)
+```
+
+```{r standard-curve, eval=F}
+## Standard curve
+plot(std_all$RelQ.mean)
+ggplot(std_all, aes(x = RelQ.mean, y = copy.Nbs)) +
+        geom_point() +
+        geom_smooth(method = "lm") + 
+        theme_bw()+
+        science_theme
+
+# qplot(y = data_m_su$conc, x = data_m_su$Copy.Nbs.round)
+
+
+```
+
+## Distribution of copy numbers
+```{r distribution}
+# plot(table(data_m_su$Copy.Nbs.round))
+# table(data_m_su$Copy.Nbs.round)
+ggplot(data = data_all, aes(x = as.factor(Copy.Nbs.round))) +
+        theme_bw() +
+        geom_bar(binwidth = 0.9, col = "black", fill = "skyblue")+
+        science_theme
+
+# ggplot(data = data_m_su, aes(x = Copy.Nbs.esti)) +
+#         theme_bw() +
+#         geom_bar(binwidth = 0.05, col = "white", fill = "skyblue")
+```
+
+
+#### _Note_:  
+-  The following sample(s) might have vague estimation(s) of copy number: ***`r data_all[data_all$diff > 0.40,]$RUID`***.    
+-  The following sample(s) might have high ddCt SEM(s) : ***`r filter(data_all, ddCt.sem > 0.1)$RUID`*** (***`r filter(data_all, ddCt.sem > 0.1)$ddCt.sem`***).     
+
+## Diagostics
+### Sample Location
+```{r sampleLoc, results='asis'}
+highSemSamples <- filter(data_all, ddCt.sem > 0.1)$RUID
+table <- sampleLoc_all[sampleLoc_all$RUID %in% highSemSamples, ] %>%
+        arrange(plate_ID, p384)
+kable(table)
+
+```
+
+### Raw data
+```{r raw data, eval=F}
+tb <- merge(data_raw, table, by.x = c("Pos"), by.y =c("p384"), all.y = T ) %>%
+        arrange()
+kable(tb)
+
+```
+
+
