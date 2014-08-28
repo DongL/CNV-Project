@@ -137,6 +137,15 @@ checkLoc <- function(RUID){
 # plot(table(data_batch$Copy.Nbs.round))
 ### example #######################################
 
+# themes #######################
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "none", 
+                      #                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))   
+
+#  makeForestPlotForRCTs ######################
 makeForestPlotForRCTs <- function(mylist, referencerow=2){
         require("rmeta")
         numstrata <- length(mylist)
@@ -180,33 +189,32 @@ makeForestPlotForRCTs <- function(mylist, referencerow=2){
         forestplot(tabletext,m,l,u,zero=0,is.summary=c(TRUE,TRUE,rep(FALSE,8),TRUE),
                    clip=c(log(0.1),log(2.5)), xlog=TRUE,
                    col=meta.colors(box="royalblue",line="darkblue", summary="royalblue"))
-
-#  example
-# mymatrix1 <- matrix(c(198,728,128,576),nrow=2,byrow=TRUE)
-# mymatrix2 <- matrix(c(96,437,101,342),nrow=2,byrow=TRUE)
-# mymatrix3 <- matrix(c(1105,4243,1645,6703),nrow=2,byrow=TRUE)
-# mymatrix4 <- matrix(c(741,2905,594,2418),nrow=2,byrow=TRUE)
-# mymatrix5 <- matrix(c(264,1091,907,3671),nrow=2,byrow=TRUE)
-# mymatrix6 <- matrix(c(105,408,348,1248),nrow=2,byrow=TRUE)
-# mymatrix7 <- matrix(c(138,431,436,1576),nrow=2,byrow=TRUE)
-# mylist <- list(mymatrix1,mymatrix2,mymatrix3,mymatrix4,mymatrix5,mymatrix6,mymatrix7)
-# 
-# makeForestPlotForRCTs(mylist)
 }
 
+#  example
+mymatrix1 <- matrix(c(198,728,128,576),nrow=2,byrow=TRUE)
+mymatrix2 <- matrix(c(96,437,101,342),nrow=2,byrow=TRUE)
+mymatrix3 <- matrix(c(1105,4243,1645,6703),nrow=2,byrow=TRUE)
+mymatrix4 <- matrix(c(741,2905,594,2418),nrow=2,byrow=TRUE)
+mymatrix5 <- matrix(c(264,1091,907,3671),nrow=2,byrow=TRUE)
+mymatrix6 <- matrix(c(105,408,348,1248),nrow=2,byrow=TRUE)
+mymatrix7 <- matrix(c(138,431,436,1576),nrow=2,byrow=TRUE)
+mylist <- list(mymatrix1,mymatrix2,mymatrix3,mymatrix4,mymatrix5,mymatrix6,mymatrix7)
 
+makeForestPlotForRCTs(mylist)
 
 
 #  forestplot ####################
 forestplot <- function(d, xlab="Odds Ratio", ylab="Study"){
         require(ggplot2)
         p <- ggplot(d, aes(x=x, y=y, ymin=ylo, ymax=yhi)) + 
-                geom_pointrange() + 
+                geom_pointrange(col = "blue") + 
                 coord_flip() +
                 geom_hline(aes(x=0), lty=2) +
                 ylab(xlab) +
                 xlab(ylab) +#switch because of the coord_flip() above
-                theme_science
+                science_theme+
+                theme_bw()
         return(p)
 }
 
