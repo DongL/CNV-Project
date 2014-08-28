@@ -5,7 +5,7 @@ output:
   pdf_document: default
 ---
 
-RIVUR - DEFA1A3 
+RIVUR - DEFA1A3
 ===========
 ```{r output, eval = F, echo = F}
 output:
