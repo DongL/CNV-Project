@@ -17,6 +17,7 @@ IGLL5: Grand table
 #     menu: F
 #     title: "IGLL5 report"
 library(knitr)
+library(epiR)
 library(xtable)
 library(dplyr)
 library(ggplot2)
@@ -44,7 +45,7 @@ science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"
 ```{r data_load_preprocessing, cache=FALSE, message = FALSE, echo=F, results='asis'}
 file_list <- list()
 fileloc = "/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/"
-fi <- list.files(fileloc)[1]
+fi <- list.files(fileloc)[1:2]
 for (file in fi){
         file_list[[length(file_list)+1]] <- read.table(paste0(fileloc, file),skip = 1, sep = ",", header = T)
 } 
@@ -58,34 +59,50 @@ for(i in 1:length(fi)){
 data_raw = do.call(rbind, file_list) %>% tbl_df
 
 keyMap_std <- data.frame(pos = c("B13", "B14", "B15",
-                                 "C13", "C14", "C15",
+                                 "D13", "D14", "D15",
                                  "F13", "F14", "F15",
                                  "H13", "H14", "H15",
                                  "J13", "J14", "J15",
-                                 "L13", "L14", "L15",
-                                 "N13", "N14", "N15"),
+                                 "L13", "L14", "L15"),
                          sample = c(rep("K106957-", 3), 
                                     rep("K44781-", 3),
                                     rep("K96097-", 3),
                                     rep("K94705-", 3),
                                     rep("K84083-", 3),
-                                    rep("K75881-", 3),
-                                    rep("K94705B-", 3)),
-                         copy_Nbs = rep(c(NA, 1, NA, 2, NA, NA, NA), times = 3))
+                                    rep("K75881-", 3)),
+                         copy_Nbs = rep(c(NA, 1, NA, 2, NA, NA), times = 3))
+
+# keyMap_std <- data.frame(pos = c("B1", "B2", "B3",
+#                                  "D1", "D2", "D3",
+#                                  "F1", "F2", "F3",
+#                                  "H1", "H2", "H3",
+#                                  "J1", "J2", "J3",
+#                                  "L1", "L2", "L3"),
+#                          sample = c(rep("K106957-", 3), 
+#                                     rep("K44781-", 3),
+#                                     rep("K96097-", 3),
+#                                     rep("K94705-", 3),
+#                                     rep("K84083-", 3),
+#                                     rep("K75881-", 3)),
+#                          copy_Nbs = rep(c(NA, 1, NA, 2, NA, NA), times = 3))
 
 attr(keyMap_std,which = "Note") = "7 standards added!"
 
-lapply(file_list, function(data){f(data, keyMap_std = keyMap_std)$data_su})
-lapply(file_list, function(data){f(data, keyMap_std = "default")$data_su})
 
-data_batch <- lapply(file_list, function(data){f(data)$data_su})
-data_batch <- lapply(file_list, function(data){f(data, keyMap_std = keyMap_std)$data_su})
+batch <- lapply(file_list, function(data){f(data, keyMap_std = keyMap_std, 
+                                                 calib= c("D13", "D14", "D15"))})
 
-lapply(file_list, f, keyMap_std = "not default")
+data_batch <- lapply(batch, function(x) x$data_su)
+std_batch <- lapply(batch, function(x) x$std_su)
+sampleLoc_bactch <- lapply(batch, function(x) x$sampleLoc)
 
-
-std_batch <- lapply(file_list, function(x) f(x)$std_su)
-sampleLoc_bactch <- lapply(file_list, function(x) f(x)$sampleLoc)
+# 
+# 
+# std_batch <- lapply(file_list, function(data){f(data, keyMap_std = keyMap_std,
+#                                                 calib= c("D13", "D14", "D15"))$std_su})
+# 
+# sampleLoc_bactch <- lapply(file_list, function(data){f(data, keyMap_std = keyMap_std,
+#                                                 calib= c("D13", "D14", "D15"))$sampleLoc})
 data_all <- do.call(rbind, data_batch)
 std_all <- do.call(rbind, std_batch)
 sampleLoc_all <- do.call(rbind, sampleLoc_bactch)
@@ -103,11 +120,11 @@ write.csv(file = file, data_all)
 #         geom_point()
 ```
 
-```{r std, eval=F}
+```{r std, eval=T}
 kable(std_all)
 ```
 
-```{r standard-curve, eval=F}
+```{r standard-curve, eval=T}
 ## Standard curve
 plot(std_all$RelQ.mean)
 ggplot(std_all, aes(x = RelQ.mean, y = copy.Nbs)) +
@@ -140,7 +157,7 @@ ggplot(data = data_all, aes(x = as.factor(Copy.Nbs.round))) +
 -  The following sample(s) might have vague estimation(s) of copy number: ***`r data_all[data_all$diff > 0.40,]$RUID`***.    
 -  The following sample(s) might have high ddCt SEM(s) : ***`r filter(data_all, ddCt.sem > 0.1)$RUID`*** (***`r filter(data_all, ddCt.sem > 0.1)$ddCt.sem`***).     
 
-## Diagostics
+## Diagnostics
 ### Sample Location
 ```{r sampleLoc, results='asis'}
 highSemSamples <- filter(data_all, ddCt.sem > 0.1)$RUID
