@@ -7,7 +7,7 @@ output:
     toc: yes
   word_document: default
 ---
-IGLL5: Plate(8000013509)
+IGLL5: Plate(8000013509)--
 ====
 
 ```{r setting, message = FALSE, echo=FALSE}
