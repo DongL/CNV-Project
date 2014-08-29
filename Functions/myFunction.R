@@ -53,7 +53,7 @@ f <- function(data = data, keyMap_std = "default", calib ){
         calib_dCt = mean(calib_df$dCt)
         
         data_su = group_by(data, Pos, Sample.Name, plate_ID) %>%
-                summarize(ddCt = Cp[1]-Cp[2], RelQ = 2^-ddCt)
+                summarize(ddCt = Cp[1]-Cp[2]-calib_dCt, RelQ = 2^-ddCt)
         # merge key map and plate data
         ## data info
         data_384 <- merge(keyMap, data_su, by.x = "p384", by.y = "Pos", all = T)%>% tbl_df
@@ -88,8 +88,8 @@ f <- function(data = data, keyMap_std = "default", calib ){
         data_m_su$Copy.Nbs.round = round(data_m_su$Copy.Nbs.esti)
         diff <- abs(data_m_su$Copy.Nbs.esti-data_m_su$Copy.Nbs.round)
         data_m_su$diff <- diff
-#         file <- paste(c("IGLL5-", plate_code, ".csv"), collapse = "")
-#         write.csv(file = file, data_m_su)
+        file <- paste(c("IGLL5-", plate_code, ".csv"), collapse = "")
+        write.csv(file = file, data_m_su)
         
         result = list()
         result$data_su = tbl_df(data_m_su)
