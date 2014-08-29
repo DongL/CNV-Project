@@ -45,7 +45,7 @@ science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"
 ```{r data_load_preprocessing, cache=FALSE, message = FALSE, echo=F, results='asis'}
 file_list <- list()
 fileloc = "/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/"
-fi <- list.files(fileloc)[1:2]
+fi <- list.files(fileloc)[1]
 for (file in fi){
         file_list[[length(file_list)+1]] <- read.table(paste0(fileloc, file),skip = 1, sep = ",", header = T)
 } 
@@ -72,12 +72,12 @@ keyMap_std <- data.frame(pos = c("B13", "B14", "B15",
                                     rep("K75881-", 3)),
                          copy_Nbs = rep(c(NA, 1, NA, 2, NA, NA), times = 3))
 
-# keyMap_std <- data.frame(pos = c("B1", "B2", "B3",
-#                                  "D1", "D2", "D3",
-#                                  "F1", "F2", "F3",
-#                                  "H1", "H2", "H3",
-#                                  "J1", "J2", "J3",
-#                                  "L1", "L2", "L3"),
+# keyMap_std <- data.frame(pos = c("B4", "B5", "B6",
+#                                  "D4", "D5", "D6",
+#                                  "F4", "F5", "F6",
+#                                  "H4", "H5", "H6",
+#                                  "J4", "J5", "J6",
+#                                  "L4", "L5", "L6"),
 #                          sample = c(rep("K106957-", 3), 
 #                                     rep("K44781-", 3),
 #                                     rep("K96097-", 3),
@@ -114,8 +114,8 @@ sampleLoc_all <- do.call(rbind, sampleLoc_bactch)
 ```{r data summary}
 kable(select(data_all, -diff), digits = 2, align = "c" )
 
-file <- paste(c("IGLL5-grand_table", ".csv"), collapse = "")
-write.csv(file = file, data_all)
+# file <- paste(c("IGLL5_grand_table", ".csv"),  collapse = "")
+# write.csv(file = file, data_all)
 # ggplot(std_merge, aes(x = sample, y = RelQ.sem)) %>%
 #         geom_point()
 ```
@@ -175,4 +175,18 @@ kable(tb)
 
 ```
 
+```{r grand table, eval = T}
+file_list <- list()
+fileloc = "/Users/DL/Documents/R project/Memphis - Copy Number Variation/IGLL5 copy typing/IGLL5_table/"
+fi <- list.files(fileloc)
+for (file in fi){
+        file_list[[length(file_list)+1]] <- read.table(paste0(fileloc, file), sep = ",", header = T)
+} 
+
+igll5_grand_table <- do.call(rbind, file_list)
+hist(igll5_grand_table$RelQ.mean)
+hist(igll5_grand_table$Copy.Nbs.round)
+write.csv()
+
+```
 
