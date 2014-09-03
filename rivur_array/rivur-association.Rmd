@@ -1,0 +1,130 @@
+---
+title: "RIVUR - DEFA1A3 association study"
+author: "Dong Liang"
+date: "September 3, 2014"
+output: html_document
+---
+
+```{r output, eval = F, echo = F}
+output:
+  knitrBootstrap::bootstrap_document:
+    theme: default
+    highlight: sunburst
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+```
+
+```{r setting, message = FALSE, echo=FALSE}
+# output:
+#   knitrBootstrap::bootstrap_document:
+#     theme.chooser: T
+#     highlight.chooser: FALSE
+#     menu: F
+#     title: "IGLL5 repor
+library(agricolae)
+library(xlsx)
+library(car)
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(magrittr)
+library(gridExtra)
+library(gmodels)
+library(psych)
+library(tabplot)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 6, fig.width = 8)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
+opts_chunk$set(bootstrap.thumbnail.size='col-md-12', 
+               bootstrap.thumbnail = T,
+               bootstrap.panel = T)
+
+# source("/Users/DL/Documents/R project/Memphis - Copy Number Variation/Functions/myFunction.R")
+ 
+```
+
+```{r functions, echo=F}
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "bottom", 
+#                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))  
+
+plt_prop <- function (data, x, fill) {
+        TABLE_FUN = eval(parse(text = paste0("table(data$", x, ", data$", fill, ")"))) 
+        data_prop = prop.table(TABLE_FUN,2) %>% data.frame
+        names(data_prop) = c(x, fill, "Freq")
+        
+        ggplot(data_prop, aes_string(x = x, y = "Freq", fill = fill))+
+                geom_bar(stat = "identity", col = "black", position = "dodge")+
+                theme_bw() + 
+                science_theme
+}
+plt_ecdf <- function (data, x, group) {
+        ggplot(data, aes_string(x = x, col = group)) + 
+                geom_line(stat = "ecdf") +
+                scale_x_discrete(limits = 1:13)+
+                theme_bw() + 
+                science_theme
+}
+
+```
+
+
+```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
+
+rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
+names(rva1a3_array) = toupper(names(rva1a3_array))
+rva1a3_array$TXGROUP_LABEL = recode(rva1a3_array$TXGROUP, 
+                             "'A' = 'TMP/SMZ'; 
+                              'P' = 'Placebo'
+                             ")
+rva1a3_array$TF02_LABEL = recode(rva1a3_array$TF02, 
+                             "1 = 'Treatment Failure'; 
+                              0 = 'No Treatment Failure'
+                             ")
+rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102, 
+                             "1 = 'White'; 
+                              2 = 'Black';
+                              3 = 'Asian';
+                              4 = 'Hawaiian/Pacific Islander ';
+                              5 = 'American Indian/Alaskan';
+                              6 = 'Other';
+                              7 = 'Mixed';
+                              8 = 'Missing'
+                             ")
+
+# rva1a3_array = filter(rva1a3_array, RACE0102_LABEL == 'Asian')
+
+# str(rva1a3)
+# dim(rva1a3)
+# names(rva1a3)
+# names(rva1a3_array)
+# IQR(rva1a3_array$DEFA1.A3.CN, na.rm = T)
+# prop.table(table(rva1a3_array$DEFA1.A3.CN))
+# quantile(rva1a3_array$DEFA1.A3.CN, na.rm = T, probs = 0.01)
+# boxplot(rva1a3_array$DEFA1.A3.CN, notch = T, varwidth = T)
+# 
+# CrossTable(x = rva1a3_array$AGE0101, y = rva1a3_array$RACE0102)
+
+# pairs.panels(rva1a3_array[c("AGE0101","RACE0102","SEX0101", "DEFA1.A3.CN")])
+
+```
+```{r plot}
+data = rva1a3_array[!is.na(rva1a3_array$DEFA1.A3.CN),]
+plt_prop(data, "DEFA1.A3.CN", "SEX0101")
+plt_ecdf(data, "DEFA1.A3.CN", "SEX0101")
+
+# p <- ggplot(mtcars, aes(x = hp)) +
+#   geom_bar(aes(y = (..count..)/sum(..count..))
+#            , binwidth = 25
+#            , fill = 'white'
+#            , colour = 'black') +
+#   scale_y_continuous(labels = percent_format())
+# p
+```
+
