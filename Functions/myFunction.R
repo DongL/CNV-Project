@@ -101,7 +101,12 @@ f <- function(data = data, keyMap_std = "default", calib ){
 
 
 
-
-
-
+plt_triple <- function (va) {
+        data = rva1a3_array[!is.na(rva1a3_array[va]), ]
+        p = list()
+        lapply(seq_along(va), function (i) plt_box(data, "DEFA1.A3.CN", va)) -> p[1]
+        lapply(seq_along(va), function (i) plt_prop(data, "DEFA1.A3.CN", va)) -> p[2]
+        lapply(seq_along(va), function (i) plt_ecdf(data, "DEFA1.A3.CN", va)) -> p[3]
+        do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+}
 

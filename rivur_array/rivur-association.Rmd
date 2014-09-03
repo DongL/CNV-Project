@@ -1,0 +1,180 @@
+---
+title: "RIVUR - DEFA1A3 association study"
+output: html_document
+---
+
+```{r output, eval = F, echo = F}
+output:
+  knitrBootstrap::bootstrap_document:
+    theme: default
+    highlight: sunburst
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+```
+
+```{r setting, message = FALSE, echo=FALSE}
+# output:
+#   knitrBootstrap::bootstrap_document:
+#     theme.chooser: T
+#     highlight.chooser: FALSE
+#     menu: F
+#     title: "IGLL5 repor
+library(agricolae)
+library(xlsx)
+library(car)
+library(knitr)
+library(xtable)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(magrittr)
+library(gridExtra)
+library(gmodels)
+library(psych)
+library(tabplot)
+opts_chunk$set(dev=c("svg"), 
+              fig.height = 4, fig.width = 14)
+opts_chunk$set(fig.show="hold")
+opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
+opts_chunk$set(bootstrap.thumbnail.size='col-md-12', 
+               bootstrap.thumbnail = T,
+               bootstrap.panel = T)
+
+# source("/Users/DL/Documents/R project/Memphis - Copy Number Variation/Functions/myFunction.R")
+ 
+```
+
+```{r functions, echo=F}
+science_theme = theme(panel.grid.major = element_line(size = 0.4, color = "grey"),
+                      axis.line = element_line(size = 0.5, color = "black"), 
+                      legend.position = "bottom", 
+#                       legend.position = c(0.85, 0.85),
+                      plot.title = element_text(lineheight=.8, size = 10,  face="bold"),
+                      text = element_text(size = 14))  
+
+plt_prop <- function (data, x, fill) {
+        TABLE_FUN = eval(parse(text = paste0("table(data$", x, ", data$", fill, ")"))) 
+        data_prop = prop.table(TABLE_FUN,2) %>% data.frame
+        names(data_prop) = c(x, fill, "Freq")
+        
+        ggplot(data_prop, aes_string(x = x, y = "Freq", fill = fill))+
+                geom_bar(stat = "identity", col = "black", position = "dodge")+
+                scale_x_discrete(limits = 1:13)+
+                theme_bw() + 
+                science_theme +
+                scale_fill_brewer(palette = 3)
+}
+plt_ecdf <- function (data, x, group) {
+        ggplot(data, aes_string(x = x, col = group)) + 
+                geom_line(stat = "ecdf", size = 1) +
+                scale_x_discrete(limits = 1:13)+
+                ylab("Cumulative Proportion") +
+                theme_bw() + 
+                science_theme+
+                scale_color_brewer(palette = 3)
+}
+plt_box <- function(df, y, x){
+        ggplot(df, aes_string(y = y, x = x)) +
+                geom_boxplot(aes_string(fill = x)) +
+                scale_y_continuous(breaks = 3:14) +
+                theme_bw() +
+                science_theme+
+                scale_fill_brewer(palette = 3)
+}
+
+plt_triple <- function (va) {
+  data = rva1a3_array[!is.na(rva1a3_array[va]), ]
+  p = list()
+  lapply(seq_along(va), function (i) plt_box(data, "DEFA1.A3.CN", va)) -> p[1]
+  lapply(seq_along(va), function (i) plt_prop(data, "DEFA1.A3.CN", va)) -> p[2]
+  lapply(seq_along(va), function (i) plt_ecdf(data, "DEFA1.A3.CN", va)) -> p[3]
+  do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+}
+
+```
+
+
+```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
+
+rva1a3_array <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
+names(rva1a3_array) = toupper(names(rva1a3_array))
+rva1a3_array$TXGROUP_LABEL = recode(rva1a3_array$TXGROUP, 
+                             "'A' = 'TMP/SMZ'; 
+                              'P' = 'Placebo'
+                             ")
+rva1a3_array$TF02_LABEL = recode(rva1a3_array$TF02, 
+                             "1 = 'Treatment Failure'; 
+                              0 = 'No Treatment Failure'
+                             ")
+rva1a3_array$RACE0102_LABEL = recode(rva1a3_array$RACE0102, 
+                             "1 = 'White'; 
+                              2 = 'Black';
+                              3 = 'Asian';
+                              4 = 'Hawaiian/Pacific Islander ';
+                              5 = 'American Indian/Alaskan';
+                              6 = 'Other';
+                              7 = 'Mixed';
+                              8 = 'Missing'
+                             ")
+
+rva1a3_array$dtCHR_CONST = unclass(rva1a3_array$CHR_CONST1302) - unclass(rva1a3_array$CHR_CONST0102)
+
+rva1a3_array$dtCHR_CONST_LABEL = recode(rva1a3_array$dtCHR_CONST, 
+                             "-1 = 'Better'; 
+                               0 = 'No Change';
+                               1 = 'Worse'
+                             ")
+
+
+
+# rva1a3_array = filter(rva1a3_array, RACE0102_LABEL == 'Asian')
+
+# str(rva1a3)
+# dim(rva1a3)
+# names(rva1a3)
+# names(rva1a3_array)
+# IQR(rva1a3_array$DEFA1.A3.CN, na.rm = T)
+# prop.table(table(rva1a3_array$DEFA1.A3.CN))
+# quantile(rva1a3_array$DEFA1.A3.CN, na.rm = T, probs = 0.01)
+# boxplot(rva1a3_array$DEFA1.A3.CN, notch = T, varwidth = T)
+# 
+# CrossTable(x = rva1a3_array$AGE0101, y = rva1a3_array$RACE0102)
+
+# pairs.panels(rva1a3_array[c("AGE0101","RACE0102","SEX0101", "DEFA1.A3.CN")])
+
+```
+
+### Gender
+```{r sex}
+va <- c("SEX0101")
+lapply(seq_along(va), function(i) plt_triple(va[i])) %>% invisible
+```
+
+### Chronic constipation
+```{r dtCHR_CONST_LABEL}
+va <- c("dtCHR_CONST_LABEL")
+lapply(seq_along(va), function(i) plt_triple(va[i])) %>% invisible
+```
+
+## Grade and laterality (left/right/both) of vesicoureteral reflux
+### Highest grade of reflux for right ureter
+```{r VR_3R_1301}
+rva1a3_array$VR_3R_1301_LABEL = recode(rva1a3_array$VR_3R_1301, 
+                             " 0 = NA; 
+                               1:2 = 'Low';
+                               3:4 = 'High'
+                             ")
+rva1a3_array$VR_3R_0101_LABEL = recode(rva1a3_array$VR_3R_0101, 
+                             " 0 = NA; 
+                               1:2 = 'Low';
+                               3:4 = 'High'
+                             ")
+
+va <- c("VR_3R_0101_LABEL", "VR_3R_1301_LABEL")
+sapply(seq_along(va), function(i) plt_triple(va[i])) %>% invisible
+
+
+```
+
+
+
