@@ -1,6 +1,8 @@
 ---
-title: "RIVUR - DEFA1A3 association study" 
-output: html_document 
+title: "RIVUR - DEFA1A3 association study"
+author: "Dong Liang"
+date: "September 3, 2014"
+output: html_document
 ---
 
 ```{r output, eval = F, echo = F}
@@ -64,6 +66,7 @@ plt_prop <- function (data, x, fill) {
                 science_theme +
                 scale_fill_brewer(palette = 3)
 }
+
 plt_ecdf <- function (data, x, group) {
         ggplot(data, aes_string(x = x, col = group)) + 
                 geom_line(stat = "ecdf", size = 1) +
@@ -89,6 +92,7 @@ plt_triple <- function (va) {
   lapply(seq_along(va), function (i) plt_prop(data, "DEFA1.A3.CN", va)) -> p[2]
   lapply(seq_along(va), function (i) plt_ecdf(data, "DEFA1.A3.CN", va)) -> p[3]
   do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
+
 }
 
 ```
@@ -125,23 +129,6 @@ rva1a3_array$dtCHR_CONST_LABEL = recode(rva1a3_array$dtCHR_CONST,
                                1 = 'Worse'
                              ")
 
-
-
-# rva1a3_array = filter(rva1a3_array, RACE0102_LABEL == 'Asian')
-
-# str(rva1a3)
-# dim(rva1a3)
-# names(rva1a3)
-# names(rva1a3_array)
-# IQR(rva1a3_array$DEFA1.A3.CN, na.rm = T)
-# prop.table(table(rva1a3_array$DEFA1.A3.CN))
-# quantile(rva1a3_array$DEFA1.A3.CN, na.rm = T, probs = 0.01)
-# boxplot(rva1a3_array$DEFA1.A3.CN, notch = T, varwidth = T)
-# 
-# CrossTable(x = rva1a3_array$AGE0101, y = rva1a3_array$RACE0102)
-
-# pairs.panels(rva1a3_array[c("AGE0101","RACE0102","SEX0101", "DEFA1.A3.CN")])
-
 ```
 
 ### Gender
@@ -175,6 +162,3 @@ sapply(seq_along(va), function(i) plt_triple(va[i])) %>% invisible
 
 
 ```
-
-
-
