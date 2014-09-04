@@ -1,6 +1,6 @@
 ---
-title: "RIVUR - DEFA1A3 association study"
-output: html_document
+title: "RIVUR - DEFA1A3 association study" 
+output: html_document 
 ---
 
 ```{r output, eval = F, echo = F}
