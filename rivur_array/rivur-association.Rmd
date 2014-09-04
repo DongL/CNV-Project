@@ -1,6 +1,6 @@
 ---
 title: "RIVUR - IGLL5 association study"
-output: html_document
+output: html_document 
 ---
 
 ```{r output, eval = F, echo = F}
