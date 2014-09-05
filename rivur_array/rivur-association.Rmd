@@ -65,11 +65,18 @@ plt_box <- function(df, y, x){
 }
 
 plt_prop <- function (data, x, fill) {
+#         data = data[complete.cases(data),]
         TABLE_FUN = eval(parse(text = paste0("table(data$", x, ", data$", fill, ")"))) 
         data_prop = prop.table(TABLE_FUN,2) %>% data.frame
         data_prop = data_prop[complete.cases(data_prop),]
         names(data_prop) = c(x, fill, "Proportion")
-        kable(data_prop)
+        
+        cat("\n",fill)
+        table = as.data.frame.matrix(TABLE_FUN) %>% tbl_df
+        table = table[colnames(table) != 'NA']
+        kable(table)
+        cat("\n")
+
         ggplot(data_prop, aes_string(x = x, y = "Proportion", fill = fill))+
                 geom_bar(stat = "identity", col = "black", position = "dodge")+
                 scale_x_discrete()+
@@ -227,7 +234,7 @@ rv$dtCHR_CONST_LABEL = recode(rv$dtCHR_CONST,
                                0 = 'No Change';
                                1 = 'Worse'
                              ")
-rv = filter(rv, RACE0102_LABEL == 'White', SEX0101 == "F" )
+# rv = filter(rv, RACE0102_LABEL == 'White', SEX0101 == "F" )
 ```
 ## Data summary
 ```{r summary - plot, fig.height = 7, fig.width = 10, eval = T}
@@ -247,8 +254,8 @@ va <- c("SEX0101")
 lapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 ```
 
-### Race
-```{r cor - Race, eval = T}
+
+```{r ### Race cor - Race, eval = F}
 rv$RACE0102_LABEL = recode(rv$RACE0102, 
                              "1 = 'White'; 
                               2 = 'Black';
@@ -418,3 +425,20 @@ va <- c("WORST_SCARRING0101_LABEL", "WORST_SCARRING1301_LABEL", "dtWORST_SCARRIN
 sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 
 ```
+
+### Bladder and bowel movement dysfunction
+```{r cor - BBD}
+rv$dtBBD = (rv$BBD1302 - rv$BBD0102)
+rv$dtBBD_LABEL = recode(rv$dtBBD, 
+                             "1 = 'Worse'; 
+                              0 = 'No Change';
+                             -1 = 'Better'")
+
+rv$BBD0102 = as.factor(rv$BBD0102)
+rv$BBD1302 = as.factor(rv$BBD1302)
+rv$dtBBD_LABEL = as.factor(rv$dtBBD_LABEL)
+
+va <- c("BBD0102", "BBD1302", "dtBBD_LABEL")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+```
+
