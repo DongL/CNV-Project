@@ -1,6 +1,8 @@
 ---
-title: "RIVUR - IGLL5 association study" 
-output: html_document 
+title: "RIVUR - IGLL5 association study"
+output:
+  html_document:
+    theme: cerulean
 ---
 
 ```{r output, eval = F, echo = F}
@@ -33,7 +35,7 @@ library(gmodels)
 library(psych)
 library(tabplot)
 opts_chunk$set(dev=c("svg"), 
-              fig.height = 4, fig.width = 14)
+              fig.height = 4.5, fig.width = 15)
 opts_chunk$set(fig.show="hold")
 opts_chunk$set(warning=F, message = FALSE, echo=F, results='asis')
 opts_chunk$set(bootstrap.thumbnail.size='col-md-12', 
@@ -56,9 +58,10 @@ plt_box <- function(df, y, x){
         ggplot(df, aes_string(y = y, x = x)) +
                 geom_boxplot(aes_string(fill = x)) +
                 scale_y_continuous() +
+#                 scale_fill_brewer(palette = 3)+
                 theme_bw() +
-                science_theme+
-                scale_fill_brewer(palette = 1)
+                science_theme
+                
 }
 
 plt_prop <- function (data, x, fill) {
@@ -69,9 +72,9 @@ plt_prop <- function (data, x, fill) {
         ggplot(data_prop, aes_string(x = x, y = "Proportion", fill = fill))+
                 geom_bar(stat = "identity", col = "black", position = "dodge")+
                 scale_x_discrete()+
+#                 scale_color_brewer(palette = 3)+
                 theme_bw() + 
-                science_theme +
-                scale_fill_brewer(palette = 1)
+                science_theme 
 }
 
 plt_ecdf <- function (data, x, group) {
@@ -79,28 +82,107 @@ plt_ecdf <- function (data, x, group) {
                 geom_line(stat = "ecdf", size = 1) +
 #                 scale_x_discrete()+
                 ylab("Cumulative Proportion") +
+#                 scale_color_brewer(palette = 3)+
                 theme_bw() + 
-                science_theme+
-                scale_color_brewer(palette = 1)
+                science_theme
 }
 
-plt_triple <- function (data = l5, gene = "COPY.NBS.ROUND", va) {
-        data = data[!is.na(data[va])&!is.na(data[gene]), ]
+plt_triple <- function (data = rv, gene = "DEFA1.A3.CN", va) {
+        data = data[!is.na(data[va])&!is.na(data[gene])&data[gene] != 'NA'&data[va]!= 'NA', ]
         p = list()
-        lapply(seq_along(va), function (i) plt_box(data, "DDCT.MEAN", va)) -> p[1]
+        lapply(seq_along(va), function (i) plt_box(data, gene, va)) -> p[1]
         lapply(seq_along(va), function (i) plt_prop(data = data, x = gene, fill = va)) -> p[2]
         lapply(seq_along(va), function (i) plt_ecdf(data, gene, va)) -> p[3]
         do.call(grid.arrange, c(p, list(nrow = 1, ncol =3)))
 }
 
+plt <- function(df, x, y){
+        df_l = "rv[!is.na(rv[x]) & (rv[x] != 'NA'), ]"
+        
+        pa <- paste0("(",df_l,"$",y,", ", df_l,"$",x)
+        FUN_kruskal = paste0("kruskal", pa, ", group = F, console = F)")
+        result_kruskal = eval(parse(text = FUN_kruskal))$comparison
+        
+        cat("\n",x)
+        if (dim(result_kruskal[result_kruskal$pvalue < 0.05,])[1] != 0){
+                kable(result_kruskal[result_kruskal$pvalue < 0.05,])
+        }
+        cat("\n")
+        
+        para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
+        FUN_TABLE <- paste0("table",  para)
+        p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
+        p.kruskal = kruskal.test(as.formula(paste0(y, "~", x)), data = df)$p.value
+        p = p.kruskal
+        print(p)
+        
+        if(p > 0.2 | p == "NaN" | !exists("p")) {
+                ggplot(df, aes_string(y = y, x = x)) +
+                        geom_boxplot() +
+                        scale_y_continuous(breaks = 3:14) +
+                        theme_bw() +
+                        science_theme
+        } else
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_boxplot(aes_string(fill = x)) +
+                scale_y_continuous(breaks = 3:14) +
+                theme_bw() +
+                science_theme
+        
+        
+}
+plt_point <- function(df, x, y){
+#         oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
+        df_l = "rv[!is.na(rv[x]) & (rv[x] != 'NA')&rv[!is.na(rv[y]) & (rv[y] != 'NA'), ]"
+        para <- paste0("(",df_l,"$",y,", ", df_l,"$",x, ")")
+        FUN_TABLE <- paste0("table",  para)
+        p.chisq = chisq.test(eval(parse(text = FUN_TABLE)))$p.value
+        p.kruskal = kruskal.test(as.formula(paste0(y, "~", x)), data = df)$p.value
+        p = p.kruskal
+#         print(p)
+        if(p > 0.2| p == "NaN") {
+                ggplot(df, aes_string(y = y, x = x)) +
+                        geom_point(position = "") +
+                        stat_sum(aes(size = ..n..)) +
+                        scale_y_continuous(breaks = 3:14) +
+                        scale_x_discrete() +
+                        theme_bw() +
+                        science_theme
+        }else
+                ggplot(df, aes_string(y = y, x = x)) +
+                geom_point(position = "", col = "blue") +
+                stat_sum(aes(size = ..n..), col = "blue") +
+                scale_y_continuous(breaks = 3:14) +
+                scale_x_discrete() +
+                theme_bw() +
+                science_theme
+}
+
+plt_s <- function(df, x, y){
+        ggplot(df, aes_string(y = y, x = x)) +
+        geom_boxplot() +
+        scale_y_continuous(breaks = 3:14) +
+        theme_bw() +
+        science_theme
+}
+
+plt_point_s <- function(df, x, y){
+        ggplot(df, aes_string(y = y, x = x)) +
+        geom_point(position = "") +
+        stat_sum(aes(size = ..n..)) +
+        scale_y_continuous(breaks = 3:14) +
+        scale_x_discrete() +
+        theme_bw() +
+        science_theme
+}
 ```
 
 
 ```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
 
-# l5 <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
+rv <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 
-l5 <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/IGLL5-grand_table(cali = J).csv", header = T, stringsAsFactors = T) %>% tbl_df
+# l5 <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/IGLL5-grand_table(cali = J).csv", header = T, stringsAsFactors = T) %>% tbl_df
 
 sampleInfo = read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 
@@ -108,20 +190,20 @@ knum_ = sub("^ |-D$|A$|B$|-DNA-LCL| -$", "", sampleInfo$Knum.Original)
 knum = sub("^ |-D$|A$|B$|-DNA-LCL| -$", "", knum_)
 sampleInfo$knum = knum
 
-l5 = merge(l5, sampleInfo, by.x = "RUID", by.y = "knum", all = T)
-names(l5) = toupper(names(l5))
-l5 = l5[l5$DDCT.SEM<0.5 & !is.na(l5$DDCT.MEAN), ]
+# rv = merge(rv, sampleInfo, by.x = "RUID", by.y = "knum", all = T)
+names(rv) = toupper(names(rv))
+# rv = rv[rv$DDCT.SEM<0.5 & !is.na(rv$DDCT.MEAN), ]
 
 
-l5$TXGROUP_LABEL = recode(l5$TXGROUP, 
+rv$TXGROUP_LABEL = recode(rv$TXGROUP, 
                              "'A' = 'TMP/SMZ'; 
                               'P' = 'Placebo'
                              ")
-l5$TF02_LABEL = recode(l5$TF02, 
+rv$TF02_LABEL = recode(rv$TF02, 
                              "1 = 'Treatment Failure'; 
                               0 = 'No Treatment Failure'
                              ")
-l5$RACE0102_LABEL = recode(l5$RACE0102, 
+rv$RACE0102_LABEL = recode(rv$RACE0102, 
                              "1 = 'White'; 
                               2 = 'Black';
                               3 = 'Asian';
@@ -132,9 +214,9 @@ l5$RACE0102_LABEL = recode(l5$RACE0102,
                               8 = 'Missing'
                              ")
 
-l5$dtCHR_CONST = unclass(l5$CHR_CONST1302) - unclass(l5$CHR_CONST0102)
+rv$dtCHR_CONST = unclass(rv$CHR_CONST1302) - unclass(rv$CHR_CONST0102)
 
-l5$dtCHR_CONST_LABEL = recode(l5$dtCHR_CONST, 
+rv$dtCHR_CONST_LABEL = recode(rv$dtCHR_CONST, 
                              "-1 = 'Better'; 
                                0 = 'No Change';
                                1 = 'Worse'
@@ -142,14 +224,14 @@ l5$dtCHR_CONST_LABEL = recode(l5$dtCHR_CONST,
 
 ```
 ## Data summary
-```{r summary - plot, fig.height = 7, fig.width = 10}
+```{r summary - plot, fig.height = 7, fig.width = 10, eval = F}
 par(mfrow = c(2,3))
-hist(l5$AGE0101, xlab = "Age",breaks = 20, main = "")
-plot(as.factor(l5$RACE0102_LABEL), breaks = 7, xlab = "Race", main = "")
-plot(factor(l5$SEX0101), xlab = "Sex", main = "")
-hist(l5$COPY.NBS.ROUND, xlab = "IGLL5.Copy.Nbs", breaks = 12, main = "")
-plot(l5$TXGROUP_LABEL, xlab = "Treatment group assignment")
-plot(as.factor(l5$TF02_LABEL), xlab = "Treatment failure")
+hist(rv$AGE0101, xlab = "Age",breaks = 20, main = "")
+plot(as.factor(rv$RACE0102_LABEL), breaks = 7, xlab = "Race", main = "")
+plot(factor(rv$SEX0101), xlab = "Sex", main = "")
+hist(rv$COPY.NBS.ROUND, xlab = "IGLrv.Copy.Nbs", breaks = 12, main = "")
+plot(rv$TXGROUP_LABEL, xlab = "Treatment group assignment")
+plot(as.factor(rv$TF02_LABEL), xlab = "Treatment failure")
 ```
 
 ## Correlation
@@ -159,21 +241,74 @@ va <- c("SEX0101")
 lapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 ```
 
+### Race
+```{r cor - Race, eval = F}
+rv$RACE0102_LABEL = recode(rv$RACE0102, 
+                             "1 = 'White'; 
+                              2 = 'Black';
+                              3 = 'Asian';
+                              4 = 'Hawaiian/Pacific Islander ';
+                              5 = 'American Indian/Alaskan';
+                              6 = 'Other';
+                              7 = 'Mixed';
+                              8 = 'Missing'
+                             ")
+rv$RACE0102_LABEL = as.factor(rv$RACE0102_LABEL)
+va <- c("RACE0102_LABEL", "SEX0101")
+
+p = list()
+lapply(seq_along(va), function(i) plt_s(df = rv[!is.na(rv[va[i]]), ], x = va[i], y = "COPY.NBS.ROUND")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
+
+p = list()
+lapply(seq_along(va), function(i) plt_point_s(df = rv[!is.na(rv[va[i]]), ], x = va[i], y = "COPY.NBS.ROUND")) -> p
+do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
+
+# par(mfrow = c(1,2))
+# boxplot(DEFA1.A3.CN ~ RACE0102_LABEL, data = rva1a3_array, 
+#         xlab = "Race", ylab = "Copy.Nbs",
+#         col = rainbow(7),
+#         notch = T)
+# boxplot(DEFA1.A3.CN ~ SEX0101, data = rva1a3_array, 
+#         xlab = "Sex", ylab = "Copy.Nbs",
+#         notch = T, varwidth = F)
+
+```
+
+
 ### Chronic constipation
 ```{r dtCHR_CONST_LABEL}
 va <- c("dtCHR_CONST_LABEL")
 lapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 ```
 
-## Grade and laterality (left/right/both) of vesicoureteral reflux
-### Highest grade of reflux for right ureter
-```{r VR_3R_1301}
-l5$VR_3R_1301_LABEL = recode(l5$VR_3R_1301, 
+### Grade and laterality (left/right/both) of vesicoureteral reflux
+#### Highest grade of reflux for left ureter
+```{r VR_3L}
+rv$VR_3L_1301_LABEL = recode(rv$VR_3L_1301, 
                              " 0 = NA; 
                                1:2 = 'Low';
                                3:4 = 'High'
                              ")
-l5$VR_3R_0101_LABEL = recode(l5$VR_3R_0101, 
+rv$VR_3L_0101_LABEL = recode(rv$VR_3L_0101, 
+                             " 0 = NA; 
+                               1:2 = 'Low';
+                               3:4 = 'High'
+                             ")
+
+va <- c("VR_3L_0101_LABEL", "VR_3L_1301_LABEL")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+
+```
+
+#### Highest grade of reflux for right ureter
+```{r VR_3R}
+rv$VR_3R_1301_LABEL = recode(rv$VR_3R_1301, 
+                             " 0 = NA; 
+                               1:2 = 'Low';
+                               3:4 = 'High'
+                             ")
+rv$VR_3R_0101_LABEL = recode(rv$VR_3R_0101, 
                              " 0 = NA; 
                                1:2 = 'Low';
                                3:4 = 'High'
@@ -182,5 +317,25 @@ l5$VR_3R_0101_LABEL = recode(l5$VR_3R_0101,
 va <- c("VR_3R_0101_LABEL", "VR_3R_1301_LABEL")
 sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 
+```
+
+#### Side with highest grade of reflux between both ureters
+```{r cor-HIGHEST_REFLUX_SIDE}
+rv$dtHIGHEST_REFLUX_SIDE = as.factor(unclass(rv$HIGHEST_REFLUX_SIDE1301) - unclass(rv$HIGHEST_REFLUX_SIDE0101))
+
+va <- c("HIGHEST_REFLUX_SIDE0101", "HIGHEST_REFLUX_SIDE1301", "dtHIGHEST_REFLUX_SIDE")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+
+# rv$HIGHEST_REFLUX_SIDE0101 = as.factor(rv$HIGHEST_REFLUX_SIDE0101)
+# rv$HIGHEST_REFLUX_SIDE1301 = as.factor(rv$HIGHEST_REFLUX_SIDE1301)
 
 ```
+
+#### VUR lateral
+```{r cor-VUR_LATERAL}
+rv$dtVUR_LATERAL = as.factor(unclass(rv$VUR_LATERAL1301) - unclass(rv$VUR_LATERAL0101))
+
+va <- c("VUR_LATERAL0101", "VUR_LATERAL1301", "dtVUR_LATERAL")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+```
+
