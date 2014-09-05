@@ -426,7 +426,7 @@ sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 
 ```
 
-### Bladder and bowel movement dysfunction
+### Bladder and bowel movement dysfunction 
 ```{r cor - BBD}
 rv$dtBBD = (rv$BBD1302 - rv$BBD0102)
 rv$dtBBD_LABEL = recode(rv$dtBBD, 
