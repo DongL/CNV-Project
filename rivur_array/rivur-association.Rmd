@@ -87,7 +87,7 @@ plt_ecdf <- function (data, x, group) {
                 science_theme
 }
 
-plt_triple <- function (data = rv, gene = "DEFA1.A3.CN", va) {
+plt_triple <- function (data = rv, gene = "COPY.NBS.ROUND", va) {
         data = data[!is.na(data[va])&!is.na(data[gene])&data[gene] != 'NA'&data[va]!= 'NA', ]
         p = list()
         lapply(seq_along(va), function (i) plt_box(data, gene, va)) -> p[1]
@@ -180,9 +180,9 @@ plt_point_s <- function(df, x, y){
 
 ```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
 
-rv <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
+# rv <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 
-# l5 <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/IGLL5-grand_table(cali = J).csv", header = T, stringsAsFactors = T) %>% tbl_df
+rv <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/IGLL5-grand_table(cali = J).csv", header = T, stringsAsFactors = T) %>% tbl_df
 
 sampleInfo = read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 
@@ -190,9 +190,12 @@ knum_ = sub("^ |-D$|A$|B$|-DNA-LCL| -$", "", sampleInfo$Knum.Original)
 knum = sub("^ |-D$|A$|B$|-DNA-LCL| -$", "", knum_)
 sampleInfo$knum = knum
 
-# rv = merge(rv, sampleInfo, by.x = "RUID", by.y = "knum", all = T)
+rv = merge(rv, sampleInfo, by.x = "RUID", by.y = "knum", all = T)
 names(rv) = toupper(names(rv))
-# rv = rv[rv$DDCT.SEM<0.5 & !is.na(rv$DDCT.MEAN), ]
+rv = rv[rv$DDCT.SEM<0.5 & !is.na(rv$DDCT.MEAN), ]
+
+rv$COPY.NBS.ROUND = recode(rv$COPY.NBS.ROUND, 
+                             "-1 = 0")
 
 
 rv$TXGROUP_LABEL = recode(rv$TXGROUP, 
@@ -224,12 +227,12 @@ rv$dtCHR_CONST_LABEL = recode(rv$dtCHR_CONST,
 
 ```
 ## Data summary
-```{r summary - plot, fig.height = 7, fig.width = 10, eval = F}
+```{r summary - plot, fig.height = 7, fig.width = 10, eval = T}
 par(mfrow = c(2,3))
 hist(rv$AGE0101, xlab = "Age",breaks = 20, main = "")
 plot(as.factor(rv$RACE0102_LABEL), breaks = 7, xlab = "Race", main = "")
 plot(factor(rv$SEX0101), xlab = "Sex", main = "")
-hist(rv$COPY.NBS.ROUND, xlab = "IGLrv.Copy.Nbs", breaks = 12, main = "")
+hist(rv$COPY.NBS.ROUND, xlab = "IGLL5.Copy.Nbs", breaks = 12, main = "")
 plot(rv$TXGROUP_LABEL, xlab = "Treatment group assignment")
 plot(as.factor(rv$TF02_LABEL), xlab = "Treatment failure")
 ```
@@ -242,7 +245,7 @@ lapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 ```
 
 ### Race
-```{r cor - Race, eval = F}
+```{r cor - Race, eval = T}
 rv$RACE0102_LABEL = recode(rv$RACE0102, 
                              "1 = 'White'; 
                               2 = 'Black';
