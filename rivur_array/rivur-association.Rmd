@@ -67,8 +67,9 @@ plt_box <- function(df, y, x){
 plt_prop <- function (data, x, fill) {
         TABLE_FUN = eval(parse(text = paste0("table(data$", x, ", data$", fill, ")"))) 
         data_prop = prop.table(TABLE_FUN,2) %>% data.frame
+        data_prop = data_prop[complete.cases(data_prop),]
         names(data_prop) = c(x, fill, "Proportion")
-        
+        kable(data_prop)
         ggplot(data_prop, aes_string(x = x, y = "Proportion", fill = fill))+
                 geom_bar(stat = "identity", col = "black", position = "dodge")+
                 scale_x_discrete()+
@@ -87,7 +88,7 @@ plt_ecdf <- function (data, x, group) {
                 science_theme
 }
 
-plt_triple <- function (data = rv, gene = "DEFA1.A3.CN", va) {
+plt_triple <- function (data = rv, gene = "COPY.NBS.ROUND", va) {
         data = data[!is.na(data[va])&!is.na(data[gene])&data[gene] != 'NA'&data[va]!= 'NA', ]
         p = list()
         lapply(seq_along(va), function (i) plt_box(data, gene, va)) -> p[1]
@@ -131,6 +132,7 @@ plt <- function(df, x, y){
         
         
 }
+
 plt_point <- function(df, x, y){
 #         oneway_p = oneway.test(as.formula(paste0(y," ~ ",x)), data = df)$p.value
         df_l = "rv[!is.na(rv[x]) & (rv[x] != 'NA')&rv[!is.na(rv[y]) & (rv[y] != 'NA'), ]"
@@ -180,9 +182,9 @@ plt_point_s <- function(df, x, y){
 
 ```{r data_load_preprocessing, cache=T, message = FALSE, echo=F, results='asis'}
 
-rv <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
+# rv <- read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3 and Array Master Factors.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 
-# l5 <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/IGLL5-grand_table(cali = J).csv", header = T, stringsAsFactors = T) %>% tbl_df
+rv <- read.csv("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/IGLL5/Raw data/IGLL5-grand_table(cali = J).csv", header = T, stringsAsFactors = T) %>% tbl_df
 
 sampleInfo = read.xlsx("/Users/DL/Dropbox-work/My work-not sync/Protocol/Protocol Memphis/RIVUR data/RIVUR Spreadsheets/RV111201 A1A3.xls", sheetIndex = 1, header = T, stringsAsFactors = T) %>% tbl_df
 
@@ -190,9 +192,13 @@ knum_ = sub("^ |-D$|A$|B$|-DNA-LCL| -$", "", sampleInfo$Knum.Original)
 knum = sub("^ |-D$|A$|B$|-DNA-LCL| -$", "", knum_)
 sampleInfo$knum = knum
 
-# rv = merge(rv, sampleInfo, by.x = "RUID", by.y = "knum", all = T)
+rv = merge(rv, sampleInfo, by.x = "RUID", by.y = "knum", all = T)
 names(rv) = toupper(names(rv))
-# rv = rv[rv$DDCT.SEM<0.5 & !is.na(rv$DDCT.MEAN), ]
+rv = rv[rv$DDCT.SEM<0.5 & !is.na(rv$DDCT.MEAN), ]
+
+
+rv$COPY.NBS.ROUND = recode(rv$COPY.NBS.ROUND, 
+                             "-1 = 0")
 
 
 rv$TXGROUP_LABEL = recode(rv$TXGROUP, 
@@ -221,15 +227,15 @@ rv$dtCHR_CONST_LABEL = recode(rv$dtCHR_CONST,
                                0 = 'No Change';
                                1 = 'Worse'
                              ")
-
+rv = filter(rv, RACE0102_LABEL == 'White', SEX0101 == "F" )
 ```
 ## Data summary
-```{r summary - plot, fig.height = 7, fig.width = 10, eval = F}
+```{r summary - plot, fig.height = 7, fig.width = 10, eval = T}
 par(mfrow = c(2,3))
 hist(rv$AGE0101, xlab = "Age",breaks = 20, main = "")
 plot(as.factor(rv$RACE0102_LABEL), breaks = 7, xlab = "Race", main = "")
 plot(factor(rv$SEX0101), xlab = "Sex", main = "")
-hist(rv$COPY.NBS.ROUND, xlab = "IGLrv.Copy.Nbs", breaks = 12, main = "")
+hist(rv$COPY.NBS.ROUND, xlab = "IGLL5.Copy.Nbs", breaks = 12, main = "")
 plot(rv$TXGROUP_LABEL, xlab = "Treatment group assignment")
 plot(as.factor(rv$TF02_LABEL), xlab = "Treatment failure")
 ```
@@ -242,7 +248,7 @@ lapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 ```
 
 ### Race
-```{r cor - Race, eval = F}
+```{r cor - Race, eval = T}
 rv$RACE0102_LABEL = recode(rv$RACE0102, 
                              "1 = 'White'; 
                               2 = 'Black';
@@ -274,7 +280,6 @@ do.call(grid.arrange, c(p, list(nrow = 1, ncol =2)))
 #         notch = T, varwidth = F)
 
 ```
-
 
 ### Chronic constipation
 ```{r dtCHR_CONST_LABEL}
@@ -319,6 +324,36 @@ sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 
 ```
 
+#### Highest Grade of reflux between both ureters
+```{r cor-HIGHEST_REFLUX}
+rv$dtHIGHEST_REFLUX = as.factor(unclass(rv$HIGHEST_REFLUX1301) - unclass(rv$HIGHEST_REFLUX0101))
+
+rv$HIGHEST_REFLUX0101_LABEL = recode(rv$HIGHEST_REFLUX0101, 
+                             " 0 = 'None'; 
+                               1 = 'I';
+                               2 = 'II';
+                               3 = 'III';
+                               4 = 'IV';
+                               5 = 'V'
+                             ")
+rv$HIGHEST_REFLUX1301_LABEL = recode(rv$HIGHEST_REFLUX1301, 
+                             " 0 = 'None'; 
+                               1 = 'I';
+                               2 = 'II';
+                               3 = 'III';
+                               4 = 'IV';
+                               5 = 'V'
+                             ")
+
+va <- c("HIGHEST_REFLUX0101_LABEL", "HIGHEST_REFLUX1301_LABEL", "dtHIGHEST_REFLUX")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+# rv$HIGHEST_REFLUX0101_LABEL = as.factor(rv$HIGHEST_REFLUX0101_LABEL)
+# rv$HIGHEST_REFLUX1301_LABEL = as.factor(rv$HIGHEST_REFLUX1301_LABEL)
+
+
+```
+
+
 #### Side with highest grade of reflux between both ureters
 ```{r cor-HIGHEST_REFLUX_SIDE}
 rv$dtHIGHEST_REFLUX_SIDE = as.factor(unclass(rv$HIGHEST_REFLUX_SIDE1301) - unclass(rv$HIGHEST_REFLUX_SIDE0101))
@@ -339,3 +374,47 @@ va <- c("VUR_LATERAL0101", "VUR_LATERAL1301", "dtVUR_LATERAL")
 sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
 ```
 
+### Number of UTI’s
+```{r cor-PRIORUTI, eval=T}
+rv$PRIORUTI0101 = as.factor(rv$PRIORUTI0101)
+rv$NUM_UTI01 = as.factor(rv$NUM_UTI01)
+va <- c("PRIORUTI0101", "NUM_UTI01")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+```
+
+### DMSA scan results
+#### New Scar
+```{r cor-New Scar}
+rv$SCAR_NEW04_LABEL = recode(rv$SCAR_NEW04, " 0 = 'No'; 1 = 'Yes'")
+
+va <- c("SCAR_NEW04_LABEL")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+
+```
+
+#### Worst Scarring
+```{r cor-Worst Scarring}
+rv$dtWORST_SCARRING = (unclass(rv$WORST_SCARRING1301) - unclass(rv$WORST_SCARRING0101))%>% as.factor
+
+rv$WORST_SCARRING0101_LABEL = recode(rv$WORST_SCARRING0101, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rv$WORST_SCARRING0101_LABEL = factor(rv$WORST_SCARRING0101_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+rv$WORST_SCARRING1301_LABEL = recode(rv$WORST_SCARRING1301, 
+                             "'A' = 'None'; 
+                              'B' = 'Mild';
+                              'C' = 'Moderate';
+                              'D' = 'Severe';
+                              'E' = 'G. Atrophy'
+                             ")
+rv$WORST_SCARRING1301_LABEL = factor(rv$WORST_SCARRING1301_LABEL, c("None", 'Mild', 'Moderate', 'Severe', 'G. Atrophy'))
+
+va <- c("WORST_SCARRING0101_LABEL", "WORST_SCARRING1301_LABEL", "dtWORST_SCARRING")
+sapply(seq_along(va), function(i) plt_triple(va = va[i])) %>% invisible
+
+```
