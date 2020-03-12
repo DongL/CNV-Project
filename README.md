@@ -1,3 +1,3 @@
 # cnv
 
-My R scripts for daily work
+My Python and R scripts for daily work
