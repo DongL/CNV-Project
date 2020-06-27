@@ -1,3 +1,3 @@
-# Copy nubmer variation 
+# Copy number variation analysis
 
-My Python and R scripts for daily analysis on copy nubmer variation projects
+My Python and R scripts for daily analysis on copy number variation projects
